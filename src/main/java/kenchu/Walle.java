@@ -19,6 +19,7 @@
 package kenchu;
 
 import robocode.HitByBulletEvent;
+import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.Robot;
 import robocode.ScannedRobotEvent;
@@ -72,6 +73,34 @@ public class Walle extends Robot {
 
         ahead(distance / 2);
         scan();
+    }
+
+    @Override
+    public void onHitRobot(HitRobotEvent event) {
+
+        //  TODO : Fix onHitRobot method!!
+
+        if (event.getBearing() > -90 && event.getBearing() <= 90) {
+
+            double pos = getHeading() + event.getBearing();
+
+            if (event.getBearing() > 0) {
+                //  It's on my right.
+                if (getGunHeading() + pos > 360) {
+                    turnGunLeft(pos - getGunHeading());
+                } else {
+                    turnGunRight(pos - getGunHeading());
+                }
+            } else {
+                //  It's on my left.
+                turnGunLeft(360);
+            }
+
+            back(ROBOT_SIZE * 2);
+        } else {
+            turnGunRight(getHeading() - 180 - getGunHeading());
+            ahead(100);
+        }
     }
 
     @Override
