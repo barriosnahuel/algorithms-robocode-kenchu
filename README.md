@@ -1,4 +1,4 @@
-wall-e
+Wall-e
 ======
 
 Wall-e is just a simple Robot for battle in <a href="http://robocode.sourceforge.net" target="_blank">Robocode</a>
