@@ -37,42 +37,76 @@ public class Walle extends Robot {
 
     public static final int ROBOT_SIZE = 36;
 
+    private static final double DISTANCE_TO_RUN = ROBOT_SIZE * 4;
+
+    private static final double WALL_PROXIMITY_CONSTANT = 0.2;
+
+    private double battleFieldSizeAverage;
+
     @Override
     public void run() {
-
         setColors(Color.black, Color.black, Color.green);
 
+        final int degreesToRotateGun = 90;
+
+        battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
+        final double distanceToGoAhead = battleFieldSizeAverage / 5;
+        final double distanceToGoBack = distanceToGoAhead / 2;
+
         while (true) {
-            ahead(50);
-            turnGunRight(360);
-            back(50);
-            turnGunLeft(360);
+            ahead(distanceToGoAhead);
+            scanForEnemies(degreesToRotateGun);
+            back(distanceToGoBack);
+            scanForEnemies(degreesToRotateGun);
+        }
+    }
+
+    /**
+     * TODO : Javadoc for scanForEnemies
+     *
+     * @param degreesToRotateGun
+     */
+    private void scanForEnemies(int degreesToRotateGun) {
+        for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
+            turnGunRight(degreesToRotateGun);
         }
     }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        double distance = event.getDistance();
+        fire(calculateBestPowerForShoot(event.getDistance()));
+    }
 
-        int power = calculateBestPowerForShoot(distance);
+    @Override
+    public void onHitByBullet(HitByBulletEvent event) {
+        turnLeft(90 - event.getBearing());
 
-        fire(power);
-
-        if (power > 1) {
-            scan();
+        if (isNearWall(getX(), getY())) {
+            if (isHeadingWall()) {
+                back(DISTANCE_TO_RUN);
+            } else {
+                ahead(DISTANCE_TO_RUN);
+            }
+        } else {
+            ahead(DISTANCE_TO_RUN);
         }
+
+        turnGunLeft(90 + event.getBearing());
+    }
+
+    @Override
+    public void onHitWall(HitWallEvent event) {
+        final double degreesToGoOut = 90;
+
+        boolean turnRight = changeDirection(event.getBearing(), degreesToGoOut);
 
         ahead(ROBOT_SIZE);
 
-        double bearing = event.getBearing();
-        if (bearing > 0) {
-            turnRight(bearing);
+        if (turnRight) {
+            turnRight(degreesToGoOut);
         } else {
-            turnLeft(bearing);
+            turnLeft(degreesToGoOut);
         }
-
-        ahead(distance / 2);
-        scan();
     }
 
     @Override
@@ -103,24 +137,25 @@ public class Walle extends Robot {
         }
     }
 
-    @Override
-    public void onHitByBullet(HitByBulletEvent event) {
-        turnLeft(90 - event.getBearing());
-    }
+    /**
+     * Calculates which is the best power for fire to an enemy based on the distance that the enemy is.
+     *
+     * @param distance
+     *         The distance to the enemy.
+     *
+     * @return 1, 2 or 3 depending on how close we are to the enemy.
+     */
+    private int calculateBestPowerForShoot(double distance) {
+        int power = 1;
 
-    @Override
-    public void onHitWall(HitWallEvent event) {
-        final double degreesToGoOut = 90;
-
-        boolean turnRight = changeDirection(event.getBearing(), degreesToGoOut);
-
-        ahead(ROBOT_SIZE);
-
-        if (turnRight) {
-            turnRight(degreesToGoOut);
-        } else {
-            turnLeft(degreesToGoOut);
+        if (distance < battleFieldSizeAverage / 2) {
+            power = 2;
+            if (distance < battleFieldSizeAverage / 3) {
+                power = 3;
+            }
         }
+
+        return power;
     }
 
     /**
@@ -145,24 +180,30 @@ public class Walle extends Robot {
     }
 
     /**
-     * TODO : Javadoc for calculateBestPowerForShoot
+     * TODO : Javadoc for isNearWall
      *
-     * @param distance
+     * @param x
+     * @param y
      *
      * @return
      */
-    private int calculateBestPowerForShoot(double distance) {
-        int power = 1;
+    private boolean isNearWall(double x, double y) {
+        boolean isNearWall = false;
 
-        double battleFieldSizeaverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
-
-        if (distance < battleFieldSizeaverage / 2) {
-            power = 2;
-            if (distance < battleFieldSizeaverage / 3) {
-                power = 3;
-            }
+        if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT)) {
+            isNearWall = true;
+            System.out.println("Is near left/right wall.");
+        } else if (y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
+            isNearWall = true;
+            System.out.println("Is near bottom/top wall.");
         }
 
-        return power;
+        return isNearWall;
+    }
+
+    private boolean isHeadingWall() {
+//        double heading=getHeading();
+//        if(heading)
+        return false;
     }
 }
