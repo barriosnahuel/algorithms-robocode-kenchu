@@ -41,11 +41,18 @@ public class Walle extends Robot {
 
     private static final double WALL_PROXIMITY_CONSTANT = 0.2;
 
+    private static final double DISTANCE_TO_GO_FOR_TARGET = ROBOT_SIZE * 4;
+
     private double battleFieldSizeAverage;
+
+    public double initialEnergy;
+
+    private double minimumEnergyToRam;
 
     @Override
     public void run() {
-        setColors(Color.black, Color.black, Color.green);
+        initialEnergy = getEnergy();
+        minimumEnergyToRam = initialEnergy / 2;
 
         final int degreesToRotateGun = 90;
 
@@ -53,6 +60,7 @@ public class Walle extends Robot {
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
         final double distanceToGoBack = distanceToGoAhead / 2;
 
+        setColors(Color.black, Color.black, Color.green);
         while (true) {
             ahead(distanceToGoAhead);
             scanForEnemies(degreesToRotateGun);
@@ -111,29 +119,39 @@ public class Walle extends Robot {
 
     @Override
     public void onHitRobot(HitRobotEvent event) {
+        double bearing = event.getBearing();
 
-        //  TODO : Fix onHitRobot method!!
+        if (event.isMyFault() && getEnergy() > minimumEnergyToRam) {
+            turnRight(bearing);
 
-        if (event.getBearing() > -90 && event.getBearing() <= 90) {
+            findEnemy(bearing);
 
-            double pos = getHeading() + event.getBearing();
-
-            if (event.getBearing() > 0) {
-                //  It's on my right.
-                if (getGunHeading() + pos > 360) {
-                    turnGunLeft(pos - getGunHeading());
-                } else {
-                    turnGunRight(pos - getGunHeading());
-                }
-            } else {
-                //  It's on my left.
-                turnGunLeft(360);
-            }
-
-            back(ROBOT_SIZE * 2);
+            ahead(DISTANCE_TO_GO_FOR_TARGET);
         } else {
-            turnGunRight(getHeading() - 180 - getGunHeading());
-            ahead(100);
+            if (bearing > -90 && bearing <= 90) {
+                //  I'm heading him but I can't ram him.
+                findEnemy(bearing);
+                back(ROBOT_SIZE * 2);
+            } else {
+                //  It's not my fault and he's behind me.
+                turnGunRight(getHeading() - 180 - getGunHeading());
+                ahead(100);
+            }
+        }
+    }
+
+    private void findEnemy(double bearing) {
+        double pos = getHeading() + bearing;
+        if (bearing > 0) {
+            //  It's on my right.
+            if (getGunHeading() + pos > 360) {
+                turnGunLeft(pos - getGunHeading());
+            } else {
+                turnGunRight(pos - getGunHeading());
+            }
+        } else {
+            //  It's on my left.
+            turnGunLeft(360);
         }
     }
 
