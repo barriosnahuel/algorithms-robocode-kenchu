@@ -33,7 +33,7 @@ import java.awt.*;
  *
  * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
  */
-public class Walle extends Robot {
+public class KenChu extends Robot {
 
     public static final int ROBOT_SIZE = 36;
 
