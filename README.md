@@ -1,14 +1,14 @@
-Wall-e
+KenChu
 ======
 
-Wall-e is just a simple Robot for battle in <a href="http://robocode.sourceforge.net" target="_blank">Robocode</a>
+KenChu is just a simple Robot for battle in <a href="http://robocode.sourceforge.net" target="_blank">Robocode</a>
 
 * Robocode API: <a href="http://robocode.sourceforge.net/docs/robocode" target="_blank">http://robocode.sourceforge.net/docs/robocode</a>
 * Wiki: <a href="http://robowiki.net/wiki/Robocode" target="_blank">http://robowiki.net/wiki/Robocode</a>
 
 LICENSE
 ======
-    Wall-e - Just a simple Robot for battle in Robocode.
+    KenChu - Just a simple Robot for battle in Robocode.
     Copyright (C) 2013 Nahuel Barrios <barrios.nahuel@gmail.com>.
 
     This program is free software: you can redistribute it and/or modify
