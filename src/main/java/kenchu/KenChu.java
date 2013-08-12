@@ -84,7 +84,13 @@ public class KenChu extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        fire(calculateBestPowerForShoot(event.getDistance()));
+        double power = calculateBestPowerForShoot(event.getDistance());
+
+        if (power == 1 && getOthers() == 1) {
+            power = 2;
+        }
+
+        fire(power);
     }
 
     @Override
