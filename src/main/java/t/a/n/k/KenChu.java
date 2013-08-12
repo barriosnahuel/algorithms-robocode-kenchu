@@ -67,9 +67,9 @@ public class KenChu extends Robot {
         //noinspection InfiniteLoopStatement
         while (true) {
             ahead(distanceToGoAhead);
-            scanForEnemies(degreesToRotateGun);
+            scanForEnemies(degreesToRotateGun, true);
             back(distanceToGoBack);
-            scanForEnemies(degreesToRotateGun);
+            scanForEnemies(degreesToRotateGun, true);
         }
     }
 
@@ -143,9 +143,13 @@ public class KenChu extends Robot {
      *
      * @param degreesToRotateGun
      */
-    private void scanForEnemies(int degreesToRotateGun) {
+    private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
         for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
-            turnGunRight(degreesToRotateGun);
+            if (turnLeft) {
+                turnGunLeft(degreesToRotateGun);
+            } else {
+                turnGunRight(degreesToRotateGun);
+            }
         }
     }
 
@@ -158,14 +162,9 @@ public class KenChu extends Robot {
         double pos = getHeading() + bearing;
         if (bearing > 0) {
             //  It's on my right.
-            if (getGunHeading() + pos > 360) {
-                turnGunLeft(pos - getGunHeading());
-            } else {
-                turnGunRight(pos - getGunHeading());
-            }
+            turnGunRight(360);
         } else {
             //  It's on my left.
-            //  TODO : Fix method findEnemy!!
             turnGunLeft(360);
         }
     }
