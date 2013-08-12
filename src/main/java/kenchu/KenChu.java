@@ -63,22 +63,12 @@ public class KenChu extends Robot {
         final double distanceToGoBack = distanceToGoAhead / 2;
 
         setColors(Color.black, Color.black, Color.green);
+        //noinspection InfiniteLoopStatement
         while (true) {
             ahead(distanceToGoAhead);
             scanForEnemies(degreesToRotateGun);
             back(distanceToGoBack);
             scanForEnemies(degreesToRotateGun);
-        }
-    }
-
-    /**
-     * TODO : Javadoc for scanForEnemies
-     *
-     * @param degreesToRotateGun
-     */
-    private void scanForEnemies(int degreesToRotateGun) {
-        for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
-            turnGunRight(degreesToRotateGun);
         }
     }
 
@@ -148,6 +138,17 @@ public class KenChu extends Robot {
     }
 
     /**
+     * TODO : Javadoc for scanForEnemies
+     *
+     * @param degreesToRotateGun
+     */
+    private void scanForEnemies(int degreesToRotateGun) {
+        for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
+            turnGunRight(degreesToRotateGun);
+        }
+    }
+
+    /**
      * TODO : Javadoc for findEnemy
      *
      * @param bearing
@@ -211,12 +212,14 @@ public class KenChu extends Robot {
     }
 
     /**
-     * TODO : Javadoc for isNearWall
+     * Check whether we are near a wall by standing in front of it or if the wall is behind us.
      *
      * @param x
+     *         The X coordinate.
      * @param y
+     *         The Y coordinate.
      *
-     * @return
+     * @return {@code true} when we are near a wall. Otherwise {@code false}.
      */
     private boolean isNearWall(double x, double y) {
         boolean isNearWall = false;
@@ -231,12 +234,14 @@ public class KenChu extends Robot {
     }
 
     /**
-     * TODO : Javadoc for isHeadingWall
+     * Checks if we are heading a wall based on the position coordinates.
      *
      * @param x
+     *         The X coordinate.
      * @param y
+     *         The Y coordinate.
      *
-     * @return
+     * @return {@code true} if we are heading a wall or {@code false} when the wall is behind us.
      */
     private boolean isHeadingWall(double x, double y) {
         boolean isHeadingWall = false;
