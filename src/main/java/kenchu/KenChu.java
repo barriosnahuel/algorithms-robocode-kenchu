@@ -39,6 +39,8 @@ public class KenChu extends Robot {
 
     private static final double DISTANCE_TO_RUN = ROBOT_SIZE * 4;
 
+    private static final double DISTANCE_TO_RUN_BACK = DISTANCE_TO_RUN * 2;
+
     private static final double WALL_PROXIMITY_CONSTANT = 0.2;
 
     private static final double DISTANCE_TO_GO_FOR_TARGET = ROBOT_SIZE * 4;
@@ -89,12 +91,11 @@ public class KenChu extends Robot {
     public void onHitByBullet(HitByBulletEvent event) {
         turnLeft(90 - event.getBearing());
 
-        if (isNearWall(getX(), getY())) {
-            if (isHeadingWall()) {
-                back(DISTANCE_TO_RUN);
-            } else {
-                ahead(DISTANCE_TO_RUN);
-            }
+        double x = getX();
+        double y = getY();
+
+        if (isNearWall(x, y) && isHeadingWall(x, y)) {
+            back(DISTANCE_TO_RUN_BACK);
         } else {
             ahead(DISTANCE_TO_RUN);
         }
@@ -140,6 +141,11 @@ public class KenChu extends Robot {
         }
     }
 
+    /**
+     * TODO : Javadoc for findEnemy
+     *
+     * @param bearing
+     */
     private void findEnemy(double bearing) {
         double pos = getHeading() + bearing;
         if (bearing > 0) {
@@ -151,6 +157,7 @@ public class KenChu extends Robot {
             }
         } else {
             //  It's on my left.
+            //  TODO : Fix method findEnemy!!
             turnGunLeft(360);
         }
     }
@@ -210,18 +217,44 @@ public class KenChu extends Robot {
 
         if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT)) {
             isNearWall = true;
-            System.out.println("Is near left/right wall.");
         } else if (y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
             isNearWall = true;
-            System.out.println("Is near bottom/top wall.");
         }
 
         return isNearWall;
     }
 
-    private boolean isHeadingWall() {
-//        double heading=getHeading();
-//        if(heading)
-        return false;
+    /**
+     * TODO : Javadoc for isHeadingWall
+     *
+     * @param x
+     * @param y
+     *
+     * @return
+     */
+    private boolean isHeadingWall(double x, double y) {
+        boolean isHeadingWall = false;
+        double heading = getHeading();
+
+        if (heading >= 0 && heading < 90) {
+            if (x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
+                isHeadingWall = true;
+            }
+        } else if (heading >= 90 && heading < 180) {
+            if (x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) || y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT) {
+                isHeadingWall = true;
+            }
+        } else if (heading >= 180 && heading < 270) {
+            if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT) {
+                isHeadingWall = true;
+            }
+        } else {
+            //  270-360
+            if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
+                isHeadingWall = true;
+            }
+        }
+
+        return isHeadingWall;
     }
 }
