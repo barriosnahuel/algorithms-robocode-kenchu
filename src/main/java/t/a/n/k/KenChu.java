@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package kenchu;
+package t.a.n.k;
 
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
@@ -63,6 +63,7 @@ public class KenChu extends Robot {
         final double distanceToGoBack = distanceToGoAhead / 2;
 
         setColors(Color.black, Color.black, Color.green);
+
         //noinspection InfiniteLoopStatement
         while (true) {
             ahead(distanceToGoAhead);
