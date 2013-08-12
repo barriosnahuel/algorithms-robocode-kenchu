@@ -1,10 +1,10 @@
 KenChu
 ======
 
-KenChu is just a simple Robot for battle in Robocode (http://robocode.sourceforge.net)
+KenChu is just a simple Robot for battle in [Robocode](http://robocode.sourceforge.net)
 
-* Robocode API: http://robocode.sourceforge.net/docs/robocode
-* Wiki: http://robowiki.net/wiki/Robocode
+* Robocode API: [http://robocode.sourceforge.net/docs/robocode](http://robocode.sourceforge.net/docs/robocode)
+* Wiki: [http://robowiki.net/wiki/Robocode](http://robowiki.net/wiki/Robocode)
 
 LICENSE
 ======
