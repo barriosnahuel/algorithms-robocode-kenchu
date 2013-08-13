@@ -52,10 +52,16 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double minimumEnergyToRam;
 
+    private double minimumEnergyToFireBigBullets;
+
+    private double minimumEnergyToFireSmallestBullets;
+
     @Override
     public void run() {
         initialEnergy = getEnergy();
         minimumEnergyToRam = initialEnergy / 2;
+        minimumEnergyToFireBigBullets = initialEnergy * 0.3;
+        minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
 
         final int degreesToRotateGun = 90;
 
@@ -88,7 +94,6 @@ public class TiroLioYCoshaGolda extends Robot {
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
         turnLeft(90 - event.getBearing());
-        turnGunLeft(90 + event.getBearing());
 
         double x = getX();
         double y = getY();
@@ -98,6 +103,8 @@ public class TiroLioYCoshaGolda extends Robot {
         } else {
             ahead(DISTANCE_TO_RUN);
         }
+
+        turnGunLeft(90 + event.getBearing());
     }
 
     @Override
@@ -174,7 +181,7 @@ public class TiroLioYCoshaGolda extends Robot {
      * Calculates which is the best power for fire to an enemy based on the distance that the enemy is.
      *
      * @param event
-     *         The {@link ScannedRobotEvent}.
+     *         The {@link robocode.ScannedRobotEvent}.
      *
      * @return 1, 2 or 3 depending on how close we are to the enemy.
      */
@@ -184,6 +191,10 @@ public class TiroLioYCoshaGolda extends Robot {
 
         if (event.getVelocity() == 0 || distance <= battleFieldSizeAverage / 4) {
             power = Rules.MAX_BULLET_POWER;
+        } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
+            power = 0.5;
+        } else if (getEnergy() < minimumEnergyToFireBigBullets) {
+            power = 1;
         } else if (distance <= battleFieldSizeAverage / 3) {
             power = 2.5;
         } else if (distance <= battleFieldSizeAverage / 2) {
