@@ -69,7 +69,7 @@ public class TiroLioYCoshaGolda extends Robot {
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
         minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
 
-        final int degreesToRotateGun = 90;
+        final int degreesToRotateGun = 20;
 
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
@@ -191,7 +191,7 @@ public class TiroLioYCoshaGolda extends Robot {
      * @param degreesToRotateGun
      */
     private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
-        for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
+        for (int degrees = 360; degrees > 0; degrees -= degreesToRotateGun) {
             if (turnLeft) {
                 turnGunLeft(degreesToRotateGun);
             } else {
