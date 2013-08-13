@@ -1,5 +1,5 @@
 /*
- * KenChu - Just a simple Robot for battle in Robocode.
+ * TiroLioYCoshaGolda - Just a simple Robot for battle in Robocode.
  * Copyright (C) 2013 Nahuel Barrios <barrios.nahuel@gmail.com>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package t.a.n.k;
+package pnt;
 
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
@@ -34,7 +34,7 @@ import java.awt.*;
  *
  * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
  */
-public class KenChu extends Robot {
+public class TiroLioYCoshaGolda extends Robot {
 
     public static final int ROBOT_SIZE = 36;
 
