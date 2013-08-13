@@ -18,12 +18,8 @@
 
 package pnt;
 
-import robocode.HitByBulletEvent;
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
+import robocode.*;
 import robocode.Robot;
-import robocode.Rules;
-import robocode.ScannedRobotEvent;
 
 import java.awt.*;
 
@@ -56,6 +52,16 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double minimumEnergyToFireSmallestBullets;
 
+    private int firedBullets = 0;
+
+    private int hittedBullets = 0;
+
+    private int missedFiredBullets = 0;
+
+    private int notFiredBullets = 0;
+
+    private boolean displayStatistics = true;
+
     @Override
     public void run() {
         initialEnergy = getEnergy();
@@ -83,7 +89,11 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        fire(calculateBestPowerForShooting(event));
+        if (fireBullet(calculateBestPowerForShooting(event)) != null) {
+            firedBullets++;
+        } else {
+            System.out.println("Can't fire! (time n°: " + ++notFiredBullets + ")");
+        }
     }
 
     @Override
@@ -137,6 +147,41 @@ public class TiroLioYCoshaGolda extends Robot {
                 turnGunRight(getHeading() - 180 - getGunHeading());
                 ahead(100);
             }
+        }
+    }
+
+    @Override
+    public void onBulletHit(BulletHitEvent event) {
+        System.out.println("Bullet hitted " + event.getName() + "! (time n°: " + ++hittedBullets + ")");
+    }
+
+    @Override
+    public void onBulletMissed(BulletMissedEvent event) {
+        System.out.println("Bullet missed! (time n°: " + ++missedFiredBullets + ")");
+    }
+
+    @Override
+    public void onBulletHitBullet(BulletHitBulletEvent event) {
+        System.out.println("Bullet hit bullet (missed) (time n°: " + ++missedFiredBullets + ")");
+    }
+
+    @Override
+    public void onDeath(DeathEvent event) {
+        System.out.println("Fired bullets: " + firedBullets);
+        System.out.println("Hitted bullets: " + hittedBullets);
+        System.out.println("Missed fired bullets: " + missedFiredBullets);
+        System.out.println("Not fired bullets: " + notFiredBullets);
+
+        displayStatistics = false;
+    }
+
+    @Override
+    public void onRoundEnded(RoundEndedEvent event) {
+        if (displayStatistics) {
+            System.out.println("Fired bullets: " + firedBullets);
+            System.out.println("Hitted bullets: " + hittedBullets);
+            System.out.println("Missed fired bullets: " + missedFiredBullets);
+            System.out.println("Not fired bullets: " + notFiredBullets);
         }
     }
 
