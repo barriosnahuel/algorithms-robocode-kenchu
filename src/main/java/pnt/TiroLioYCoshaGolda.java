@@ -70,6 +70,7 @@ public class TiroLioYCoshaGolda extends Robot {
         final double distanceToGoBack = distanceToGoAhead / 2;
 
         setColors(Color.black, Color.black, Color.green);
+        setBulletColor(Color.cyan);
 
         //noinspection InfiniteLoopStatement
         while (true) {
@@ -82,13 +83,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        double power = calculateBestPowerForShoot(event);
-
-        if (power == 1 && getOthers() == 1) {
-            power = 2;
-        }
-
-        fire(power);
+        fire(calculateBestPowerForShooting(event));
     }
 
     @Override
@@ -185,7 +180,7 @@ public class TiroLioYCoshaGolda extends Robot {
      *
      * @return 1, 2 or 3 depending on how close we are to the enemy.
      */
-    private double calculateBestPowerForShoot(ScannedRobotEvent event) {
+    private double calculateBestPowerForShooting(ScannedRobotEvent event) {
         double distance = event.getDistance();
         double power = 1;
 
@@ -198,6 +193,10 @@ public class TiroLioYCoshaGolda extends Robot {
         } else if (distance <= battleFieldSizeAverage / 3) {
             power = 2.5;
         } else if (distance <= battleFieldSizeAverage / 2) {
+            power = 2;
+        }
+
+        if (power == 1 && getOthers() == 1) {
             power = 2;
         }
 
