@@ -22,6 +22,7 @@ import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.Robot;
+import robocode.Rules;
 import robocode.ScannedRobotEvent;
 
 import java.awt.*;
@@ -75,7 +76,7 @@ public class KenChu extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        double power = calculateBestPowerForShoot(event.getDistance());
+        double power = calculateBestPowerForShoot(event);
 
         if (power == 1 && getOthers() == 1) {
             power = 2;
@@ -172,19 +173,21 @@ public class KenChu extends Robot {
     /**
      * Calculates which is the best power for fire to an enemy based on the distance that the enemy is.
      *
-     * @param distance
-     *         The distance to the enemy.
+     * @param event
+     *         The {@link ScannedRobotEvent}.
      *
      * @return 1, 2 or 3 depending on how close we are to the enemy.
      */
-    private int calculateBestPowerForShoot(double distance) {
-        int power = 1;
+    private double calculateBestPowerForShoot(ScannedRobotEvent event) {
+        double distance = event.getDistance();
+        double power = 1;
 
-        if (distance < battleFieldSizeAverage / 2) {
+        if (event.getVelocity() == 0 || distance <= battleFieldSizeAverage / 4) {
+            power = Rules.MAX_BULLET_POWER;
+        } else if (distance <= battleFieldSizeAverage / 3) {
+            power = 2.5;
+        } else if (distance <= battleFieldSizeAverage / 2) {
             power = 2;
-            if (distance < battleFieldSizeAverage / 3) {
-                power = 3;
-            }
         }
 
         return power;
