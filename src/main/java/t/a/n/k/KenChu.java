@@ -87,6 +87,7 @@ public class KenChu extends Robot {
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
         turnLeft(90 - event.getBearing());
+        turnGunLeft(90 + event.getBearing());
 
         double x = getX();
         double y = getY();
@@ -96,8 +97,6 @@ public class KenChu extends Robot {
         } else {
             ahead(DISTANCE_TO_RUN);
         }
-
-        turnGunLeft(90 + event.getBearing());
     }
 
     @Override
@@ -159,6 +158,7 @@ public class KenChu extends Robot {
      * @param bearing
      */
     private void findEnemy(double bearing) {
+        //  TODO : Fix method findEnemy
         double pos = getHeading() + bearing;
         if (bearing > 0) {
             //  It's on my right.
