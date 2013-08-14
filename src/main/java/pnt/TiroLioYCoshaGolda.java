@@ -64,12 +64,21 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private boolean hasTarget;
 
+    private double distanceToMoveWhenOneVsOne;
+
+    private boolean isTarget;
+
+    private boolean firstMove = true;
+
+    private BattleMode battleMode = BattleMode.EVERYBODY_AGAINST_EVERYBODY;
+
     @Override
     public void run() {
         initialEnergy = getEnergy();
         minimumEnergyToRam = initialEnergy / 2;
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
         minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
+        distanceToMoveWhenOneVsOne = battleFieldSizeAverage / 3;
 
         final int degreesToRotateGun = 20;
 
@@ -82,37 +91,39 @@ public class TiroLioYCoshaGolda extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            handleMovement(Direction.AHEAD, distanceToGoAhead);
-            scanForEnemies(degreesToRotateGun, true);
-            handleMovement(Direction.BACK, distanceToGoBack);
-            scanForEnemies(degreesToRotateGun, true);
+
+            if (getOthers() == 1) {
+                battleMode = BattleMode.ONE_VS_ONE;
+                battleVsOneOpponent();
+            } else {
+                battleVsVariousOpponents(distanceToGoAhead, distanceToGoBack);
+            }
         }
     }
 
     /**
-     * Handle moving ahead and back taking into account timing and rotation degrees.
-     *
-     * @param direction
-     *         The {@link Direction} to move.
-     * @param distanceToMove
-     *         The distance to move.
+     * Runs the main strategy when battling against only one enemy.
      */
-    private void handleMovement(Direction direction, double distanceToMove) {
-        final double partialDistanceToMove = ROBOT_SIZE * 2;
-
-        for (double still = distanceToMove; still > 0; still -= partialDistanceToMove) {
-            switch (direction) {
-                case AHEAD:
-                    ahead(partialDistanceToMove);
-                    break;
-                case BACK:
-                    back(partialDistanceToMove);
-                    break;
-            }
-
-            turnGunLeft(45);
-            //  TODO : Performance : Check degrees
+    private void battleVsOneOpponent() {
+        if (firstMove) {
+            turnRadarRight(360);
         }
+
+        ahead(distanceToMoveWhenOneVsOne);
+        back(distanceToMoveWhenOneVsOne);
+    }
+
+    /**
+     * TODO : Javadoc for battleVsVariousOpponents
+     *
+     * @param distanceToGoAhead
+     * @param distanceToGoBack
+     */
+    private void battleVsVariousOpponents(double distanceToGoAhead, double distanceToGoBack) {
+        handleMovement(Direction.AHEAD, distanceToGoAhead);
+        scanForEnemies(40, true);
+        handleMovement(Direction.BACK, distanceToGoBack);
+        scanForEnemies(40, true);
     }
 
     @Override
@@ -129,35 +140,62 @@ public class TiroLioYCoshaGolda extends Robot {
     private void handleAttackStrategy(ScannedRobotEvent event) {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
 
-        boolean enemyIsNotMoving = event.getVelocity() < 2;
-        if (enemyIsNotMoving && !hasTarget) {
-            hasTarget = true;
-        }
-
-        if (getGunHeat() == 0 || hasTarget) {
-            boolean attack = true;
-
-            if (isEscaping) {
-                //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
-
-                if (getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) {
-                    System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
-                    attack = false;
-                }
-            }
-
-            if (attack) {
-                if (enemyIsNotMoving) {
-                    hasTarget = true;
-                    attackStaticEnemy();
-                } else {
-                    hasTarget = false;
-                    handleFire(calculateBestPowerForShooting(event));
-                }
+        if (battleMode == BattleMode.ONE_VS_ONE) {
+//            hasTarget = true;
+            if (firstMove) {
+                firstMove = false;
+                handleOneVsOneAttackStrategyForFirstMove(event);
+            } else {
+                handleFire(calculateBestPowerForShooting(event));
             }
         } else {
-            System.out.println("Gun is " + getGunHeat() + " heat: skipping trying to fire.");
+            boolean enemyIsNotMoving = event.getVelocity() < 2;
+            if (enemyIsNotMoving && !hasTarget) {
+                hasTarget = true;
+            }
+
+            if (getGunHeat() == 0 || hasTarget) {
+                boolean attack = true;
+
+                if (isEscaping) {
+                    //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
+
+                    if ((getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) && battleMode != BattleMode.ONE_VS_ONE) {
+                        System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
+                        attack = false;
+                    }
+                }
+
+                if (attack) {
+                    if (enemyIsNotMoving) {
+                        hasTarget = true;
+                        attackStaticEnemy();
+                    } else {
+                        hasTarget = false;
+                        handleFire(calculateBestPowerForShooting(event));
+                    }
+                }
+            } else {
+                System.out.println("Gun is " + getGunHeat() + " heat: skipping trying to fire.");
+            }
         }
+    }
+
+    /**
+     * TODO : Javadoc for handleOneVsOneAttackStrategyForFirstMove
+     *
+     * @param event
+     */
+    private void handleOneVsOneAttackStrategyForFirstMove(ScannedRobotEvent event) {
+        stop();
+
+        //  TODO : Functionality : Sets robot horizontally to escape easy.
+        setAdjustRadarForGunTurn(true);
+        turnGunRight(event.getBearing());
+        setAdjustRadarForGunTurn(false);
+//        turnRadarRight(getRadarHeading() - event.getBearing());
+        handleFire(calculateBestPowerForShooting(event));
+        scan();//   Esto va?
     }
 
     @Override
@@ -171,15 +209,35 @@ public class TiroLioYCoshaGolda extends Robot {
         double y = getY();
 
         if (isNearWall(x, y) && isHeadingWall(x, y)) {
-            back(DISTANCE_TO_RUN_BACK);
+            back(getDistanceToRun(Direction.BACK));
         } else {
-            ahead(DISTANCE_TO_RUN);
+            ahead(getDistanceToRun(Direction.AHEAD));
         }
 
         isEscaping = false;
 
         //  TODO : Fix this..
         turnGunLeft(90 + event.getBearing());
+    }
+
+    /**
+     * TODO : Javadoc for getDistanceToRun
+     *
+     * @param directionToRun
+     *
+     * @return
+     */
+    private double getDistanceToRun(Direction directionToRun) {
+        //  Default is for run ahead.
+        double distance = DISTANCE_TO_RUN;
+
+        if (isTarget) {
+            distance = battleFieldSizeAverage * 0.6;
+        } else if (directionToRun == Direction.BACK) {
+            distance = DISTANCE_TO_RUN_BACK;
+        }
+
+        return distance;
     }
 
     @Override
@@ -327,20 +385,26 @@ public class TiroLioYCoshaGolda extends Robot {
         double distance = event.getDistance();
         double power = 1;
 
-        if (distance <= battleFieldSizeAverage / 4) {
-            power = Rules.MAX_BULLET_POWER;
-        } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
-            power = 0.5;
-        } else if (getEnergy() < minimumEnergyToFireBigBullets) {
-            power = 1;
-        } else if (distance <= battleFieldSizeAverage / 3) {
-            power = 2.5;
-        } else if (distance <= battleFieldSizeAverage / 2) {
-            power = 2;
-        }
+        if (isTarget) {
+            if (distance <= battleFieldSizeAverage / 3) {
+                power = 3;
+            }
+        } else {
+            if (distance <= battleFieldSizeAverage / 4) {
+                power = Rules.MAX_BULLET_POWER;
+            } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
+                power = 0.5;
+            } else if (getEnergy() < minimumEnergyToFireBigBullets) {
+                power = 1;
+            } else if (distance <= battleFieldSizeAverage / 3) {
+                power = 2.5;
+            } else if (distance <= battleFieldSizeAverage / 2) {
+                power = 2;
+            }
 
-        if (power == 1 && getOthers() == 1) {
-            power = 2;
+            if (power == 1 && getOthers() == 1) {
+                power = 2;
+            }
         }
 
         return power;
@@ -425,6 +489,32 @@ public class TiroLioYCoshaGolda extends Robot {
         return isHeadingWall;
     }
 
+    /**
+     * Handle moving ahead and back taking into account timing and rotation degrees.
+     *
+     * @param direction
+     *         The {@link Direction} to move.
+     * @param distanceToMove
+     *         The distance to move.
+     */
+    private void handleMovement(Direction direction, double distanceToMove) {
+        final double partialDistanceToMove = ROBOT_SIZE * 2;
+
+        for (double still = distanceToMove; still > 0; still -= partialDistanceToMove) {
+            switch (direction) {
+                case AHEAD:
+                    ahead(partialDistanceToMove);
+                    break;
+                case BACK:
+                    back(partialDistanceToMove);
+                    break;
+            }
+
+            turnGunLeft(45);
+            //  TODO : Performance : Check degrees
+        }
+    }
+
 
     /**
      * Represents the different kind of directions that the robot can take when moving on the battlefild.
@@ -436,5 +526,17 @@ public class TiroLioYCoshaGolda extends Robot {
     public enum Direction {
         AHEAD,
         BACK
+    }
+
+    /**
+     * TODO : Javadoc for BattleMode
+     * <p/>
+     * Created on 8/14/13, at 15:36 PM.
+     *
+     * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
+     */
+    public enum BattleMode {
+        ONE_VS_ONE,
+        EVERYBODY_AGAINST_EVERYBODY
     }
 }
