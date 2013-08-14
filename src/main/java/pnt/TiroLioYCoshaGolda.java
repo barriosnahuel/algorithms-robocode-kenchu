@@ -52,6 +52,8 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double minimumEnergyToFireSmallestBullets;
 
+    private boolean isEscaping;
+
     private int firedBullets = 0;
 
     private int hittedBullets = 0;
@@ -59,8 +61,6 @@ public class TiroLioYCoshaGolda extends Robot {
     private int missedFiredBullets = 0;
 
     private int notFiredBullets = 0;
-
-    private boolean displayStatistics = true;
 
     @Override
     public void run() {
@@ -89,15 +89,18 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        if (fireBullet(calculateBestPowerForShooting(event)) != null) {
-            firedBullets++;
+        System.out.println("Firing...");
+
+        if (event.getVelocity() < 2) {
+            attackStaticEnemy(event);
         } else {
-            System.out.println("Can't fire! (time n°: " + ++notFiredBullets + ")");
+            handleFire(calculateBestPowerForShooting(event));
         }
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
+        isEscaping = true;
         turnLeft(90 - event.getBearing());
 
         double x = getX();
@@ -109,6 +112,9 @@ public class TiroLioYCoshaGolda extends Robot {
             ahead(DISTANCE_TO_RUN);
         }
 
+        isEscaping = false;
+
+        //  TODO : Fix this..
         turnGunLeft(90 + event.getBearing());
     }
 
@@ -169,19 +175,53 @@ public class TiroLioYCoshaGolda extends Robot {
     public void onDeath(DeathEvent event) {
         System.out.println("Fired bullets: " + firedBullets);
         System.out.println("Hitted bullets: " + hittedBullets);
-        System.out.println("Missed fired bullets: " + missedFiredBullets);
+        System.out.println("Missed bullets: " + missedFiredBullets);
         System.out.println("Not fired bullets: " + notFiredBullets);
-
-        displayStatistics = false;
     }
 
     @Override
     public void onRoundEnded(RoundEndedEvent event) {
-        if (displayStatistics) {
-            System.out.println("Fired bullets: " + firedBullets);
-            System.out.println("Hitted bullets: " + hittedBullets);
-            System.out.println("Missed fired bullets: " + missedFiredBullets);
-            System.out.println("Not fired bullets: " + notFiredBullets);
+        System.out.println("Fired bullets: " + firedBullets);
+        System.out.println("Hitted bullets: " + hittedBullets);
+        System.out.println("Missed fired bullets: " + missedFiredBullets);
+        System.out.println("Not fired bullets: " + notFiredBullets);
+    }
+
+    /**
+     * Handles the fire action to get statistics about fired bullets.
+     *
+     * @param power
+     *         The power with which to shoot
+     */
+    private void handleFire(double power) {
+        if (fireBullet(power) != null) {
+            firedBullets++;
+        } else {
+            System.out.println("Can't fire! (time n°: " + ++notFiredBullets + ")");
+        }
+    }
+
+    /**
+     * Attacks an enemy that is not moving anyway by stopping all other actions and scanning him again and again.
+     * <p/>
+     * <b>Important: </b>If we see a static enemy while we're escaping after receive a bullet from any other enemy, then we fire and continues
+     * escaping.
+     *
+     * @param event
+     *         The {@link ScannedRobotEvent}.
+     */
+    private void attackStaticEnemy(ScannedRobotEvent event) {
+        System.out.println("Attacking a static enemy.");
+
+        handleFire(Rules.MAX_BULLET_POWER);
+
+        stop();
+
+        if (isEscaping) {
+            System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
+            resume();
+        } else {
+            scan();
         }
     }
 
@@ -191,7 +231,7 @@ public class TiroLioYCoshaGolda extends Robot {
      * @param degreesToRotateGun
      */
     private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
-        for (int degrees = 360; degrees > 0; degrees -= degreesToRotateGun) {
+        for (int degrees = 180; degrees > 0; degrees -= degreesToRotateGun) {
             if (turnLeft) {
                 turnGunLeft(degreesToRotateGun);
             } else {
@@ -229,7 +269,7 @@ public class TiroLioYCoshaGolda extends Robot {
         double distance = event.getDistance();
         double power = 1;
 
-        if (event.getVelocity() == 0 || distance <= battleFieldSizeAverage / 4) {
+        if (distance <= battleFieldSizeAverage / 4) {
             power = Rules.MAX_BULLET_POWER;
         } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
             power = 0.5;
