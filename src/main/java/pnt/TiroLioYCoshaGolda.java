@@ -149,7 +149,7 @@ public class TiroLioYCoshaGolda extends Robot {
             if (attack) {
                 if (enemyIsNotMoving) {
                     hasTarget = true;
-                    attackStaticEnemy(event);
+                    attackStaticEnemy();
                 } else {
                     hasTarget = false;
                     handleFire(calculateBestPowerForShooting(event));
@@ -270,11 +270,8 @@ public class TiroLioYCoshaGolda extends Robot {
      * <p/>
      * <b>Important: </b>If we see a static enemy while we're escaping after receive a bullet from any other enemy, then we fire and continues
      * escaping.
-     *
-     * @param event
-     *         The {@link ScannedRobotEvent}.
      */
-    private void attackStaticEnemy(ScannedRobotEvent event) {
+    private void attackStaticEnemy() {
         System.out.println("Attacking a static enemy.");
 
         handleFire(Rules.MAX_BULLET_POWER);
