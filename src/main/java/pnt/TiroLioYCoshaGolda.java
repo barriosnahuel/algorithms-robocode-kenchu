@@ -204,17 +204,19 @@ public class TiroLioYCoshaGolda extends Robot {
         if (event.isMyFault() && getEnergy() > minimumEnergyToRam) {
             turnRight(bearing);
 
-            findEnemy(bearing);
+//            Call with 0 because I've already moved the gun when turning right the entire robot.
+            //  TODO : Refactor :  This call with 0 is horrible because I know the implementation of findEnemy(x)
+            findEnemy(0);
 
             ahead(DISTANCE_TO_GO_FOR_TARGET);
         } else {
+            findEnemy(bearing);
+
             if (bearing > -90 && bearing <= 90) {
                 //  I'm heading him but I can't ram him.
-                findEnemy(bearing);
                 back(ROBOT_SIZE * 2);
             } else {
                 //  It's not my fault and he's behind me.
-                turnGunRight(getHeading() - 180 - getGunHeading());
                 ahead(100);
             }
         }
@@ -303,20 +305,14 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for findEnemy
+     * Find the enemy based on the bearing that we've got to him. It will be evaluated by turning the gun to the right.
      *
      * @param bearing
+     *         The bearing to an enemy.
      */
     private void findEnemy(double bearing) {
-        //  TODO : Fix method findEnemy
-        double pos = getHeading() + bearing;
-        if (bearing > 0) {
-            //  It's on my right.
-            turnGunRight(360);
-        } else {
-            //  It's on my left.
-            turnGunLeft(360);
-        }
+        //  TODO : Performance : Improve finding an enemy: http://mark.random-article.com/weber/java/robocode/lesson4.html
+        turnGunRight(getHeading() - getGunHeading() + bearing);
     }
 
     /**
