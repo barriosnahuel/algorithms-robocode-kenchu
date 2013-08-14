@@ -1,0 +1,4 @@
+Results for 100 rounds
+Robot Name	    Total Score    	Survival	Surv Bonus	Bullet Dmg	Bullet Bonus	Ram Dmg * 2	Ram Bonus	 1sts 	 2nds 	 3rds 	
+1st: pnt.PreviousBuild*	10760 (52%)	2750	0	7042	946	22	0	55	45	0	
+2nd: pnt.TiroLioYCoshaGolda*	9874 (48%)	2250	0	6672	777	144	31	45	55	0	
