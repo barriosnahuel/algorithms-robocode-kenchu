@@ -62,6 +62,8 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private int notFiredBullets = 0;
 
+    private boolean hasTarget;
+
     @Override
     public void run() {
         initialEnergy = getEnergy();
@@ -80,27 +82,87 @@ public class TiroLioYCoshaGolda extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            ahead(distanceToGoAhead);
+            handleGo(Direction.AHEAD, distanceToGoAhead);
             scanForEnemies(degreesToRotateGun, true);
-            back(distanceToGoBack);
+            handleGo(Direction.BACK, distanceToGoBack);
             scanForEnemies(degreesToRotateGun, true);
+        }
+    }
+
+    /**
+     * TODO : Javadoc for handleGo
+     *
+     * @param direction
+     * @param distanceToMove
+     */
+    private void handleGo(Direction direction, double distanceToMove) {
+        final double partialDistanceToMove = ROBOT_SIZE * 2;
+
+        for (double still = distanceToMove; still > 0; still -= partialDistanceToMove) {
+            switch (direction) {
+                case AHEAD:
+                    ahead(partialDistanceToMove);
+                    break;
+                case BACK:
+                    back(partialDistanceToMove);
+                    break;
+            }
+
+            turnGunLeft(45);
+            //  TODO : Performance : Check degrees
         }
     }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        System.out.println("Firing...");
+        handleAttackStrategy(event);
+    }
 
-        if (event.getVelocity() < 2) {
-            attackStaticEnemy(event);
+    /**
+     * Handle the attacking strategy when receiving a {@link ScannedRobotEvent}.
+     *
+     * @param event
+     *         The The {@link ScannedRobotEvent}.
+     */
+    private void handleAttackStrategy(ScannedRobotEvent event) {
+        System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
+
+        boolean enemyIsNotMoving = event.getVelocity() < 2;
+        if (enemyIsNotMoving && !hasTarget) {
+            hasTarget = true;
+        }
+
+        if (getGunHeat() == 0 || hasTarget) {
+            boolean attack = true;
+
+            if (isEscaping) {
+                //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
+
+                if (getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) {
+                    System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
+                    attack = false;
+                }
+            }
+
+            if (attack) {
+                if (enemyIsNotMoving) {
+                    hasTarget = true;
+                    attackStaticEnemy(event);
+                } else {
+                    hasTarget = false;
+                    handleFire(calculateBestPowerForShooting(event));
+                }
+            }
         } else {
-            handleFire(calculateBestPowerForShooting(event));
+            System.out.println("Gun is " + getGunHeat() + " heat: skipping trying to fire.");
         }
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
         isEscaping = true;
+        hasTarget = false;
+        //  TODO : Functionality : If bullet is from the one that is my target, then evaluate continue shooting.
         turnLeft(90 - event.getBearing());
 
         double x = getX();
@@ -215,7 +277,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
         handleFire(Rules.MAX_BULLET_POWER);
 
-        stop();
+        stop(true);
 
         if (isEscaping) {
             System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
@@ -365,5 +427,18 @@ public class TiroLioYCoshaGolda extends Robot {
         }
 
         return isHeadingWall;
+    }
+
+
+    /**
+     * Represents the different kind of directions that the robot can take when moving on the battlefild.
+     * <p/>
+     * Created on 8/13/13, at 9:36 PM.
+     *
+     * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
+     */
+    public enum Direction {
+        AHEAD,
+        BACK
     }
 }
