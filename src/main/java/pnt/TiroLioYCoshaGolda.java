@@ -82,20 +82,22 @@ public class TiroLioYCoshaGolda extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            handleGo(Direction.AHEAD, distanceToGoAhead);
+            handleMovement(Direction.AHEAD, distanceToGoAhead);
             scanForEnemies(degreesToRotateGun, true);
-            handleGo(Direction.BACK, distanceToGoBack);
+            handleMovement(Direction.BACK, distanceToGoBack);
             scanForEnemies(degreesToRotateGun, true);
         }
     }
 
     /**
-     * TODO : Javadoc for handleGo
+     * Handle moving ahead and back taking into account timing and rotation degrees.
      *
      * @param direction
+     *         The {@link Direction} to move.
      * @param distanceToMove
+     *         The distance to move.
      */
-    private void handleGo(Direction direction, double distanceToMove) {
+    private void handleMovement(Direction direction, double distanceToMove) {
         final double partialDistanceToMove = ROBOT_SIZE * 2;
 
         for (double still = distanceToMove; still > 0; still -= partialDistanceToMove) {
@@ -288,9 +290,10 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for scanForEnemies
+     * Turn the gun left/right based on {@code turnLeft} parameter in steps based on {@code degreesToRotateGun} till achieve 180 rotated degrees.
      *
      * @param degreesToRotateGun
+     *         Degrees to rotate in each step till achieve 180 rotated degrees.
      */
     private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
         for (int degrees = 180; degrees > 0; degrees -= degreesToRotateGun) {
