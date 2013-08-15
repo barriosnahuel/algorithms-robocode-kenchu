@@ -131,7 +131,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
         boolean enemyIsNotMoving = event.getVelocity() < 2;
 
-        if (!isAttackModeSet && enemyIsNotMoving) {
+        if (enemyIsNotMoving) {
             previousAttackMode = attackMode;
             attackMode = AttackModes.TARGETING;
         }
@@ -186,7 +186,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
         switch (attackMode) {
             case TARGETING:
-                handleTargeting();
+                handleTargeting(event.getBearing());
                 break;
             case ONE_ON_ONE:
                 handleOneOnOneAttackStrategy(event);
@@ -205,16 +205,32 @@ public class TiroLioYCoshaGolda extends Robot {
      *         The The {@link ScannedRobotEvent}.
      */
     private void handleOneOnOneAttackStrategy(ScannedRobotEvent event) {
+        turnRadarToGun(event.getBearing());
+
+        handleFire(calculateBestPowerForShooting(event));
+    }
+
+    /**
+     * Turn radar left/right to leave it at the same angle that the gun is.
+     *
+     * @param bearing
+     *         The bearing to the enemy.
+     */
+    private void turnRadarToGun(double bearing) {
         stop(true);
 
-        double bearing = event.getBearing();
-
-        setAdjustGunForRobotTurn(true);
-        rotateToHorizontallyAgainst(bearing);
-        setAdjustGunForRobotTurn(false);
+        if (Math.abs(bearing) != 90) {
+            setAdjustGunForRobotTurn(true);
+            rotateToHorizontallyAgainst(bearing);
+            setAdjustGunForRobotTurn(false);
+        }
 
         setAdjustRadarForGunTurn(true);
-        turnGunRight(bearing);
+        if (getHeading() == getGunHeading()) {
+            turnGunRight(bearing);
+        } else {
+            turnGunRight(getHeading() - getGunHeading() + bearing);
+        }
         setAdjustRadarForGunTurn(false);
 
         if (bearing > 0) {
@@ -222,8 +238,6 @@ public class TiroLioYCoshaGolda extends Robot {
         } else {
             turnRadarRight(getGunHeading() - getRadarHeading());
         }
-
-        handleFire(calculateBestPowerForShooting(event));
     }
 
     /**
@@ -391,9 +405,16 @@ public class TiroLioYCoshaGolda extends Robot {
      * <p/>
      * <b>Important: </b>If we see a static enemy while we're escaping after receive a bullet from any other enemy, then we fire and continues
      * escaping.
+     *
+     * @param bearing
+     *         The bearing to the enemy.
      */
-    private void handleTargeting() {
+    private void handleTargeting(double bearing) {
         System.out.println("Attacking a static enemy.");
+
+        if (previousAttackMode == AttackModes.ONE_ON_ONE) {
+            turnRadarToGun(bearing);
+        }
 
         handleFire(Rules.MAX_BULLET_POWER);
 
