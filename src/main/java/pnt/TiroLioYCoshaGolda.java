@@ -64,11 +64,11 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private boolean hasTarget;
 
-    private double distanceToMoveWhenOneVsOne;
+    private double distanceToMoveWhenOneOnOne;
 
     private boolean isTarget;
 
-    private boolean firstMove = true;
+    private boolean isScanningEnemy = true;
 
     private BattleMode battleMode = BattleMode.EVERYBODY_AGAINST_EVERYBODY;
 
@@ -78,13 +78,13 @@ public class TiroLioYCoshaGolda extends Robot {
         minimumEnergyToRam = initialEnergy / 2;
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
         minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
-        distanceToMoveWhenOneVsOne = battleFieldSizeAverage / 3;
 
         final int degreesToRotateGun = 20;
 
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
         final double distanceToGoBack = distanceToGoAhead / 2;
+        distanceToMoveWhenOneOnOne = battleFieldSizeAverage / 3;
 
         setColors(Color.black, Color.black, Color.green);
         setBulletColor(Color.cyan);
@@ -93,7 +93,7 @@ public class TiroLioYCoshaGolda extends Robot {
         while (true) {
 
             if (getOthers() == 1) {
-                battleMode = BattleMode.ONE_VS_ONE;
+                battleMode = BattleMode.ONE_ON_ONE;
                 battleVsOneOpponent();
             } else {
                 battleVsVariousOpponents(distanceToGoAhead, distanceToGoBack);
@@ -105,12 +105,12 @@ public class TiroLioYCoshaGolda extends Robot {
      * Runs the main strategy when battling against only one enemy.
      */
     private void battleVsOneOpponent() {
-        if (firstMove) {
+        if (isScanningEnemy) {
             turnRadarRight(360);
         }
 
-        ahead(distanceToMoveWhenOneVsOne);
-        back(distanceToMoveWhenOneVsOne);
+        ahead(distanceToMoveWhenOneOnOne);
+        back(distanceToMoveWhenOneOnOne);
     }
 
     /**
@@ -140,12 +140,16 @@ public class TiroLioYCoshaGolda extends Robot {
     private void handleAttackStrategy(ScannedRobotEvent event) {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
 
-        if (battleMode == BattleMode.ONE_VS_ONE) {
-//            hasTarget = true;
-            if (firstMove) {
-                firstMove = false;
-                handleOneVsOneAttackStrategyForFirstMove(event);
+        if (battleMode == BattleMode.ONE_ON_ONE) {
+            if (isScanningEnemy) {
+                isScanningEnemy = false;
+                handleOneOnOneAttackStrategyForFirstMove(event);
             } else {
+                if (getGunHeat() > 0) {
+                    turnGunLeft(5);
+                    turnGunRight(10);
+                    turnGunLeft(5);
+                }
                 handleFire(calculateBestPowerForShooting(event));
             }
         } else {
@@ -160,7 +164,7 @@ public class TiroLioYCoshaGolda extends Robot {
                 if (isEscaping) {
                     //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
 
-                    if ((getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) && battleMode != BattleMode.ONE_VS_ONE) {
+                    if ((getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) && battleMode != BattleMode.ONE_ON_ONE) {
                         System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
                         attack = false;
                     }
@@ -182,20 +186,31 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for handleOneVsOneAttackStrategyForFirstMove
+     * Reorganize radar to the same angle that the gun is and perform a fire/scan action.
+     * <p/>
+     * This method should be called only after first {@link ScannedRobotEvent} in one on one battles.
      *
      * @param event
+     *         The The {@link ScannedRobotEvent}.
      */
-    private void handleOneVsOneAttackStrategyForFirstMove(ScannedRobotEvent event) {
+    private void handleOneOnOneAttackStrategyForFirstMove(ScannedRobotEvent event) {
         stop();
 
         //  TODO : Functionality : Sets robot horizontally to escape easy.
+
         setAdjustRadarForGunTurn(true);
-        turnGunRight(event.getBearing());
+        double bearing = event.getBearing();
+        turnGunRight(bearing);
         setAdjustRadarForGunTurn(false);
-//        turnRadarRight(getRadarHeading() - event.getBearing());
+
+        if (bearing > 0) {
+            turnRadarLeft(getRadarHeading() - getGunHeading());
+        } else {
+            turnRadarRight(getGunHeading() - getRadarHeading());
+        }
+
         handleFire(calculateBestPowerForShooting(event));
-        scan();//   Esto va?
+//        resume();
     }
 
     @Override
@@ -246,12 +261,17 @@ public class TiroLioYCoshaGolda extends Robot {
 
         boolean turnRight = changeDirection(event.getBearing(), degreesToGoOut);
 
-        ahead(ROBOT_SIZE);
-
-        if (turnRight) {
-            turnRight(degreesToGoOut);
+        if (battleMode == BattleMode.ONE_ON_ONE) {
+            isScanningEnemy = true;
+            battleVsOneOpponent();
         } else {
-            turnLeft(degreesToGoOut);
+            ahead(ROBOT_SIZE);
+
+            if (turnRight) {
+                turnRight(degreesToGoOut);
+            } else {
+                turnLeft(degreesToGoOut);
+            }
         }
     }
 
@@ -536,7 +556,7 @@ public class TiroLioYCoshaGolda extends Robot {
      * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
      */
     public enum BattleMode {
-        ONE_VS_ONE,
+        ONE_ON_ONE,
         EVERYBODY_AGAINST_EVERYBODY
     }
 }
