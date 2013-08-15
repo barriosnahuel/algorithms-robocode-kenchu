@@ -70,6 +70,8 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private BattleMode battleMode = BattleMode.EVERYBODY_AGAINST_EVERYBODY;
 
+    private boolean isBattleModeSetted;
+
     @Override
     public void run() {
         initialEnergy = getEnergy();
@@ -88,8 +90,10 @@ public class TiroLioYCoshaGolda extends Robot {
         //noinspection InfiniteLoopStatement
         while (true) {
 
-            if (getOthers() == 1) {
+            if (!isBattleModeSetted && getOthers() == 1) {
                 battleMode = BattleMode.ONE_ON_ONE;
+                isBattleModeSetted = true;
+                setAdjustGunForRobotTurn(true);
                 battleVsOneOpponent();
             } else {
                 battleVsVariousOpponents(distanceToGoAhead, distanceToGoBack);
@@ -135,6 +139,13 @@ public class TiroLioYCoshaGolda extends Robot {
      */
     private void handleAttackStrategy(ScannedRobotEvent event) {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
+
+        if (!isBattleModeSetted && getOthers() == 1) {
+//            This is in case there are 2 enemies left and one kills the other. Then I see the 1 left but not from the main loop, so...
+            battleMode = BattleMode.ONE_ON_ONE;
+            isBattleModeSetted = true;
+            setAdjustGunForRobotTurn(true);
+        }
 
         boolean enemyIsNotMoving = event.getVelocity() < 2;
         if (battleMode == BattleMode.ONE_ON_ONE || (enemyIsNotMoving && !hasTarget)) {
@@ -207,8 +218,7 @@ public class TiroLioYCoshaGolda extends Robot {
         //  TODO : Functionality : Sets robot horizontally to escape easy.
         double bearing = event.getBearing();
 
-//        setAdjustGunForRobotTurn(true);
-//        rotateToHorizontallyAgainst(bearing);
+        rotateToHorizontallyAgainst(bearing);
 
         setAdjustRadarForGunTurn(true);
         turnGunRight(bearing);
