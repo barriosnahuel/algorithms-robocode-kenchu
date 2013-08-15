@@ -219,6 +219,8 @@ public class TiroLioYCoshaGolda extends Robot {
     private void turnRadarToGun(double bearing) {
         stop(true);
 
+        double firstHeading = getHeading();
+
         if (Math.abs(bearing) != 90) {
             setAdjustGunForRobotTurn(true);
             rotateToHorizontallyAgainst(bearing);
@@ -226,10 +228,29 @@ public class TiroLioYCoshaGolda extends Robot {
         }
 
         setAdjustRadarForGunTurn(true);
-        if (getHeading() == getGunHeading()) {
+        double gunHeading = getGunHeading();
+        if (getHeading() == gunHeading) {
             turnGunRight(bearing);
         } else {
-            turnGunRight(getHeading() - getGunHeading() + bearing);
+            if (Math.abs(bearing) != 90) {
+                double absolute = firstHeading + bearing;
+                double angle = absolute - gunHeading;
+
+                if (absolute > 0) {
+                    if (angle > 180) {
+                        turnGunLeft(360 - absolute + gunHeading);
+                    } else if (angle > 0) {
+                        //  y menor a 180, por la condicion anterior
+                        turnGunRight(angle);
+                    } else if (angle < 0 && angle > -180) {
+                        turnGunRight(angle);//  da negativo y va para la izquierda
+                    } else if (angle < -180) {
+                        turnGunLeft(360 - gunHeading + absolute);
+                    }
+                } else {
+                    turnGunRight(absolute);
+                }
+            }
         }
         setAdjustRadarForGunTurn(false);
 
