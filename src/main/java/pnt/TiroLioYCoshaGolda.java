@@ -52,6 +52,8 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double minimumEnergyToFireSmallestBullets;
 
+    private double minimumEnergyToStayAlive;
+
     private boolean isEscaping;
 
     private int firedBullets = 0;
@@ -92,7 +94,8 @@ public class TiroLioYCoshaGolda extends Robot {
         initialEnergy = getEnergy();
         minimumEnergyToRam = initialEnergy / 2;
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
-        minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
+        minimumEnergyToFireSmallestBullets = initialEnergy * 0.15;
+        minimumEnergyToStayAlive = initialEnergy * 0.08;
 
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
@@ -199,8 +202,6 @@ public class TiroLioYCoshaGolda extends Robot {
      *         The {@link ScannedRobotEvent}.
      */
     private void attack(ScannedRobotEvent event) {
-        //  TODO : Functionality : Improve bullet power calculation when one on one or targeting.
-
         switch (attackMode) {
             case ATTACK_MODE_TARGETING:
                 handleTargeting(event);
@@ -223,7 +224,7 @@ public class TiroLioYCoshaGolda extends Robot {
      */
     private void handleOneOnOneAttackStrategy(ScannedRobotEvent event) {
         turnRadarToGun(event.getBearing());
-
+//  TODO : Performance : Can I change the order of turning radar and firing? It's a waste of time and the enemy may be is not there after turning.
         handleFire(calculateBestPowerForShooting(event));
     }
 
@@ -506,26 +507,47 @@ public class TiroLioYCoshaGolda extends Robot {
         double distance = event.getDistance();
         double power = 1;
 
-        if (attackMode == ATTACK_MODE_ONE_ON_ONE) {
-            if (distance <= battleFieldSizeAverage / 3) {
-                power = 3;
-            }
-        } else {
-            if (distance <= battleFieldSizeAverage / 4) {
-                power = Rules.MAX_BULLET_POWER;
-            } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
-                power = 0.5;
-            } else if (getEnergy() < minimumEnergyToFireBigBullets) {
-                power = 1;
-            } else if (distance <= battleFieldSizeAverage / 3) {
-                power = 2.5;
-            } else if (distance <= battleFieldSizeAverage / 2) {
-                power = 2;
-            }
+        switch (attackMode) {
+            case ATTACK_MODE_TARGETING:
+                if (distance <= battleFieldSizeAverage / 5) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2.5;
+                } else {
+                    power = 2;
+                }
+                break;
+            case ATTACK_MODE_ONE_ON_ONE:
+                if (distance <= battleFieldSizeAverage / 5) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2.5;
+                } else if (distance <= battleFieldSizeAverage / 3) {
+                    power = 2;
+                } else if (distance <= battleFieldSizeAverage / 2) {
+                    power = 1;
+                } else {
+                    power = 0.5;
+                }
+                break;
+            default:
+                if (distance <= battleFieldSizeAverage / 4) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (getEnergy() < minimumEnergyToStayAlive) {
+                    power = Rules.MIN_BULLET_POWER;
+                } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
+                    power = 0.5;
+                } else if (getEnergy() < minimumEnergyToFireBigBullets) {
+                    power = 1;
+                } else if (distance <= battleFieldSizeAverage / 3) {
+                    power = 2.5;
+                } else if (distance <= battleFieldSizeAverage / 2) {
+                    power = 2;
+                }
 
-            if (power == 1 && getOthers() == 1) {
-                power = 2;
-            }
+                if (power == 1 && getOthers() == 1) {
+                    power = 2;
+                }
         }
 
         return power;
