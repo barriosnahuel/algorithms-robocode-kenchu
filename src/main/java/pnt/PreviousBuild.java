@@ -82,20 +82,22 @@ public class PreviousBuild extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            handleGo(Direction.AHEAD, distanceToGoAhead);
+            handleMovement(Direction.AHEAD, distanceToGoAhead);
             scanForEnemies(degreesToRotateGun, true);
-            handleGo(Direction.BACK, distanceToGoBack);
+            handleMovement(Direction.BACK, distanceToGoBack);
             scanForEnemies(degreesToRotateGun, true);
         }
     }
 
     /**
-     * TODO : Javadoc for handleGo
+     * Handle moving ahead and back taking into account timing and rotation degrees.
      *
      * @param direction
+     *         The {@link Direction} to move.
      * @param distanceToMove
+     *         The distance to move.
      */
-    private void handleGo(Direction direction, double distanceToMove) {
+    private void handleMovement(Direction direction, double distanceToMove) {
         final double partialDistanceToMove = ROBOT_SIZE * 2;
 
         for (double still = distanceToMove; still > 0; still -= partialDistanceToMove) {
@@ -147,7 +149,7 @@ public class PreviousBuild extends Robot {
             if (attack) {
                 if (enemyIsNotMoving) {
                     hasTarget = true;
-                    attackStaticEnemy(event);
+                    attackStaticEnemy();
                 } else {
                     hasTarget = false;
                     handleFire(calculateBestPowerForShooting(event));
@@ -202,17 +204,19 @@ public class PreviousBuild extends Robot {
         if (event.isMyFault() && getEnergy() > minimumEnergyToRam) {
             turnRight(bearing);
 
-            findEnemy(bearing);
+//            Call with 0 because I've already moved the gun when turning right the entire robot.
+            //  TODO : Refactor :  This call with 0 is horrible because I know the implementation of findEnemy(x)
+            findEnemy(0);
 
             ahead(DISTANCE_TO_GO_FOR_TARGET);
         } else {
+            findEnemy(bearing);
+
             if (bearing > -90 && bearing <= 90) {
                 //  I'm heading him but I can't ram him.
-                findEnemy(bearing);
                 back(ROBOT_SIZE * 2);
             } else {
                 //  It's not my fault and he's behind me.
-                turnGunRight(getHeading() - 180 - getGunHeading());
                 ahead(100);
             }
         }
@@ -268,11 +272,8 @@ public class PreviousBuild extends Robot {
      * <p/>
      * <b>Important: </b>If we see a static enemy while we're escaping after receive a bullet from any other enemy, then we fire and continues
      * escaping.
-     *
-     * @param event
-     *         The {@link ScannedRobotEvent}.
      */
-    private void attackStaticEnemy(ScannedRobotEvent event) {
+    private void attackStaticEnemy() {
         System.out.println("Attacking a static enemy.");
 
         handleFire(Rules.MAX_BULLET_POWER);
@@ -288,9 +289,10 @@ public class PreviousBuild extends Robot {
     }
 
     /**
-     * TODO : Javadoc for scanForEnemies
+     * Turn the gun left/right based on {@code turnLeft} parameter in steps based on {@code degreesToRotateGun} till achieve 180 rotated degrees.
      *
      * @param degreesToRotateGun
+     *         Degrees to rotate in each step till achieve 180 rotated degrees.
      */
     private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
         for (int degrees = 180; degrees > 0; degrees -= degreesToRotateGun) {
@@ -303,20 +305,14 @@ public class PreviousBuild extends Robot {
     }
 
     /**
-     * TODO : Javadoc for findEnemy
+     * Find the enemy based on the bearing that we've got to him. It will be evaluated by turning the gun to the right.
      *
      * @param bearing
+     *         The bearing to an enemy.
      */
     private void findEnemy(double bearing) {
-        //  TODO : Fix method findEnemy
-        double pos = getHeading() + bearing;
-        if (bearing > 0) {
-            //  It's on my right.
-            turnGunRight(360);
-        } else {
-            //  It's on my left.
-            turnGunLeft(360);
-        }
+        //  TODO : Performance : Improve finding an enemy: http://mark.random-article.com/weber/java/robocode/lesson4.html
+        turnGunRight(getHeading() - getGunHeading() + bearing);
     }
 
     /**
