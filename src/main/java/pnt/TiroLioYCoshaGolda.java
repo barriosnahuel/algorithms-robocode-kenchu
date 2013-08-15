@@ -66,8 +66,6 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double distanceToMoveWhenOneOnOne;
 
-    private boolean isTarget;
-
     private boolean isScanningEnemy = true;
 
     private BattleMode battleMode = BattleMode.EVERYBODY_AGAINST_EVERYBODY;
@@ -78,8 +76,6 @@ public class TiroLioYCoshaGolda extends Robot {
         minimumEnergyToRam = initialEnergy / 2;
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
         minimumEnergyToFireSmallestBullets = initialEnergy * 0.1;
-
-        final int degreesToRotateGun = 20;
 
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
@@ -140,6 +136,11 @@ public class TiroLioYCoshaGolda extends Robot {
     private void handleAttackStrategy(ScannedRobotEvent event) {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
 
+        boolean enemyIsNotMoving = event.getVelocity() < 2;
+        if (battleMode == BattleMode.ONE_ON_ONE || (enemyIsNotMoving && !hasTarget)) {
+            hasTarget = true;
+        }
+
         if (battleMode == BattleMode.ONE_ON_ONE) {
             if (isScanningEnemy) {
                 isScanningEnemy = false;
@@ -150,14 +151,10 @@ public class TiroLioYCoshaGolda extends Robot {
                     turnGunRight(10);
                     turnGunLeft(5);
                 }
-                handleFire(calculateBestPowerForShooting(event));
+
+                attack(event, enemyIsNotMoving);
             }
         } else {
-            boolean enemyIsNotMoving = event.getVelocity() < 2;
-            if (enemyIsNotMoving && !hasTarget) {
-                hasTarget = true;
-            }
-
             if (getGunHeat() == 0 || hasTarget) {
                 boolean attack = true;
 
@@ -171,17 +168,28 @@ public class TiroLioYCoshaGolda extends Robot {
                 }
 
                 if (attack) {
-                    if (enemyIsNotMoving) {
-                        hasTarget = true;
-                        attackStaticEnemy();
-                    } else {
-                        hasTarget = false;
-                        handleFire(calculateBestPowerForShooting(event));
-                    }
+                    attack(event, enemyIsNotMoving);
                 }
             } else {
                 System.out.println("Gun is " + getGunHeat() + " heat: skipping trying to fire.");
             }
+        }
+    }
+
+    /**
+     * TODO : Javadoc for attack
+     *
+     * @param event
+     * @param enemyIsNotMoving
+     */
+    private void attack(ScannedRobotEvent event, boolean enemyIsNotMoving) {
+        //  TODO : Functionality : Improve bullet power calculation when one on one or targetting.
+        if (enemyIsNotMoving) {
+            hasTarget = true;
+            attackStaticEnemy();
+        } else {
+            hasTarget = false;
+            handleFire(calculateBestPowerForShooting(event));
         }
     }
 
@@ -197,9 +205,12 @@ public class TiroLioYCoshaGolda extends Robot {
         stop();
 
         //  TODO : Functionality : Sets robot horizontally to escape easy.
+        double bearing = event.getBearing();
+
+//        setAdjustGunForRobotTurn(true);
+//        rotateToHorizontallyAgainst(bearing);
 
         setAdjustRadarForGunTurn(true);
-        double bearing = event.getBearing();
         turnGunRight(bearing);
         setAdjustRadarForGunTurn(false);
 
@@ -211,6 +222,21 @@ public class TiroLioYCoshaGolda extends Robot {
 
         handleFire(calculateBestPowerForShooting(event));
 //        resume();
+    }
+
+    /**
+     * TODO : Javadoc for rotateToHorizontallyAgainst
+     * <p/>
+     * It works!!
+     *
+     * @param bearing
+     */
+    private void rotateToHorizontallyAgainst(double bearing) {
+        if (bearing > 0) {
+            turnLeft(90 - bearing);
+        } else {
+            turnRight(90 - Math.abs(bearing));
+        }
     }
 
     @Override
@@ -246,7 +272,7 @@ public class TiroLioYCoshaGolda extends Robot {
         //  Default is for run ahead.
         double distance = DISTANCE_TO_RUN;
 
-        if (isTarget) {
+        if (battleMode == BattleMode.ONE_ON_ONE) {
             distance = battleFieldSizeAverage * 0.6;
         } else if (directionToRun == Direction.BACK) {
             distance = DISTANCE_TO_RUN_BACK;
@@ -405,10 +431,10 @@ public class TiroLioYCoshaGolda extends Robot {
         double distance = event.getDistance();
         double power = 1;
 
-        if (isTarget) {
-            if (distance <= battleFieldSizeAverage / 3) {
-                power = 3;
-            }
+        if (battleMode == BattleMode.ONE_ON_ONE) {
+//            if (distance <= battleFieldSizeAverage / 3) {
+//                power = 3;
+//            }
         } else {
             if (distance <= battleFieldSizeAverage / 4) {
                 power = Rules.MAX_BULLET_POWER;
