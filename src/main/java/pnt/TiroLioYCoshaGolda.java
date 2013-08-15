@@ -62,15 +62,13 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private int notFiredBullets = 0;
 
-    private boolean hasTarget;
-
     private double distanceToMoveWhenOneOnOne;
 
-    private boolean isScanningEnemy = true;
+    private AttackModes attackMode = AttackModes.EVERYBODY_AGAINST_EVERYBODY;
 
-    private BattleMode battleMode = BattleMode.EVERYBODY_AGAINST_EVERYBODY;
+    private boolean isAttackModeSet;
 
-    private boolean isBattleModeSetted;
+    private AttackModes previousAttackMode;
 
     @Override
     public void run() {
@@ -89,14 +87,12 @@ public class TiroLioYCoshaGolda extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
+            updateAttackModeWhenCorresponding();
 
-            if (!isBattleModeSetted && getOthers() == 1) {
-                battleMode = BattleMode.ONE_ON_ONE;
-                isBattleModeSetted = true;
-                setAdjustGunForRobotTurn(true);
-                battleVsOneOpponent();
+            if (attackMode == AttackModes.ONE_ON_ONE) {
+                battleOneOnOne();
             } else {
-                battleVsVariousOpponents(distanceToGoAhead, distanceToGoBack);
+                battleEverybodyAgainstEverybody(distanceToGoAhead, distanceToGoBack);
             }
         }
     }
@@ -104,22 +100,22 @@ public class TiroLioYCoshaGolda extends Robot {
     /**
      * Runs the main strategy when battling against only one enemy.
      */
-    private void battleVsOneOpponent() {
-        if (isScanningEnemy) {
-            turnRadarRight(360);
-        }
-
+    private void battleOneOnOne() {
+        turnRadarRight(360);
         ahead(distanceToMoveWhenOneOnOne);
+        turnRadarRight(360);
         back(distanceToMoveWhenOneOnOne);
     }
 
     /**
-     * TODO : Javadoc for battleVsVariousOpponents
+     * Runs the main strategy when battling against more than one enemy.
      *
      * @param distanceToGoAhead
+     *         Distance to move ahead.
      * @param distanceToGoBack
+     *         Distance to move back
      */
-    private void battleVsVariousOpponents(double distanceToGoAhead, double distanceToGoBack) {
+    private void battleEverybodyAgainstEverybody(double distanceToGoAhead, double distanceToGoBack) {
         handleMovement(Direction.AHEAD, distanceToGoAhead);
         scanForEnemies(40, true);
         handleMovement(Direction.BACK, distanceToGoBack);
@@ -128,58 +124,40 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        handleAttackStrategy(event);
-    }
-
-    /**
-     * Handle the attacking strategy when receiving a {@link ScannedRobotEvent}.
-     *
-     * @param event
-     *         The The {@link ScannedRobotEvent}.
-     */
-    private void handleAttackStrategy(ScannedRobotEvent event) {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
 
-        if (!isBattleModeSetted && getOthers() == 1) {
-//            This is in case there are 2 enemies left and one kills the other. Then I see the 1 left but not from the main loop, so...
-            battleMode = BattleMode.ONE_ON_ONE;
-            isBattleModeSetted = true;
-            setAdjustGunForRobotTurn(true);
-        }
+        //  This is in case there are 2 enemies left and one kills the other. Then I see the 1 left but not from the main loop, so...
+        updateAttackModeWhenCorresponding();
 
         boolean enemyIsNotMoving = event.getVelocity() < 2;
-        if (battleMode == BattleMode.ONE_ON_ONE || (enemyIsNotMoving && !hasTarget)) {
-            hasTarget = true;
+
+        if (!isAttackModeSet && enemyIsNotMoving) {
+            previousAttackMode = attackMode;
+            attackMode = AttackModes.TARGETING;
         }
 
-        if (battleMode == BattleMode.ONE_ON_ONE) {
-            if (isScanningEnemy) {
-                isScanningEnemy = false;
-                handleOneOnOneAttackStrategyForFirstMove(event);
-            } else {
-                if (getGunHeat() > 0) {
-                    turnGunLeft(5);
-                    turnGunRight(10);
-                    turnGunLeft(5);
-                }
-
-                attack(event, enemyIsNotMoving);
+        if (attackMode == AttackModes.ONE_ON_ONE) {
+            if (getGunHeat() > 0) {
+                turnGunLeft(5);
+                turnGunRight(10);
+                turnGunLeft(5);
             }
+
+            attack(event);
         } else {
-            if (getGunHeat() == 0 || hasTarget) {
+            if (getGunHeat() == 0 || attackMode == AttackModes.TARGETING) {
                 boolean attack = true;
 
                 if (isEscaping) {
                     //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
-
-                    if ((getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) && battleMode != BattleMode.ONE_ON_ONE) {
+                    if ((getEnergy() < initialEnergy * 0.3 || event.getEnergy() > initialEnergy * 0.2) && attackMode != AttackModes.ONE_ON_ONE) {
                         System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
                         attack = false;
                     }
                 }
 
                 if (attack) {
-                    attack(event, enemyIsNotMoving);
+                    attack(event);
                 }
             } else {
                 System.out.println("Gun is " + getGunHeat() + " heat: skipping trying to fire.");
@@ -188,19 +166,33 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for attack
+     * Sets the {@link #attackMode} to ONE_ON_ONE if there is only one enemy left and the {@link #isAttackModeSet} field is not set yet.
+     */
+    private void updateAttackModeWhenCorresponding() {
+        if (!isAttackModeSet && getOthers() == 1) {
+            attackMode = AttackModes.ONE_ON_ONE;
+            isAttackModeSet = true;
+        }
+    }
+
+    /**
+     * Fire. Finally this method will execute the call to {@link #fire(double) for each {@link AttackModes}.
      *
      * @param event
-     * @param enemyIsNotMoving
+     *         The {@link ScannedRobotEvent}.
      */
-    private void attack(ScannedRobotEvent event, boolean enemyIsNotMoving) {
-        //  TODO : Functionality : Improve bullet power calculation when one on one or targetting.
-        if (enemyIsNotMoving) {
-            hasTarget = true;
-            attackStaticEnemy();
-        } else {
-            hasTarget = false;
-            handleFire(calculateBestPowerForShooting(event));
+    private void attack(ScannedRobotEvent event) {
+        //  TODO : Functionality : Improve bullet power calculation when one on one or targeting.
+
+        switch (attackMode) {
+            case TARGETING:
+                handleTargeting();
+                break;
+            case ONE_ON_ONE:
+                handleOneOnOneAttackStrategy(event);
+                break;
+            default:
+                handleFire(calculateBestPowerForShooting(event));
         }
     }
 
@@ -212,13 +204,14 @@ public class TiroLioYCoshaGolda extends Robot {
      * @param event
      *         The The {@link ScannedRobotEvent}.
      */
-    private void handleOneOnOneAttackStrategyForFirstMove(ScannedRobotEvent event) {
-        stop();
+    private void handleOneOnOneAttackStrategy(ScannedRobotEvent event) {
+        stop(true);
 
-        //  TODO : Functionality : Sets robot horizontally to escape easy.
         double bearing = event.getBearing();
 
+        setAdjustGunForRobotTurn(true);
         rotateToHorizontallyAgainst(bearing);
+        setAdjustGunForRobotTurn(false);
 
         setAdjustRadarForGunTurn(true);
         turnGunRight(bearing);
@@ -231,15 +224,13 @@ public class TiroLioYCoshaGolda extends Robot {
         }
 
         handleFire(calculateBestPowerForShooting(event));
-//        resume();
     }
 
     /**
-     * TODO : Javadoc for rotateToHorizontallyAgainst
-     * <p/>
-     * It works!!
+     * Rotates the body of the robot to stay horizontally to the specified robot/wall/bullet origin.
      *
      * @param bearing
+     *         The bearing to the robot/wall/bullet origin, in degrees.
      */
     private void rotateToHorizontallyAgainst(double bearing) {
         if (bearing > 0) {
@@ -249,10 +240,35 @@ public class TiroLioYCoshaGolda extends Robot {
         }
     }
 
+    /**
+     * TODO : Javadoc for changeDirection
+     *
+     * @param bearing
+     * @param degrees
+     *
+     * @return
+     */
+    private boolean changeDirection(double bearing, double degrees) {
+        //  TODO : Performance : Check if this method can be removed and use its code into rotateToHorizontallyAgainst
+        boolean changedRight = true;
+
+        if (bearing > 0) {
+            turnRight(bearing + degrees);
+        } else if (bearing != -180) {
+            turnLeft(bearing * -1 + degrees);
+            changedRight = false;
+        }
+
+        return changedRight;
+    }
+
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
         isEscaping = true;
-        hasTarget = false;
+        if (attackMode == AttackModes.TARGETING) {
+            attackMode = previousAttackMode;
+        }
+
         //  TODO : Functionality : If bullet is from the one that is my target, then evaluate continue shooting.
         turnLeft(90 - event.getBearing());
 
@@ -272,17 +288,19 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for getDistanceToRun
+     * Calculates the best distance to move the robot for the specified {@code directionToRun} and taking into account the current {@link
+     * #attackMode}.
      *
      * @param directionToRun
+     *         Direction indicating where to move.
      *
-     * @return
+     * @return The distance to move.
      */
     private double getDistanceToRun(Direction directionToRun) {
         //  Default is for run ahead.
         double distance = DISTANCE_TO_RUN;
 
-        if (battleMode == BattleMode.ONE_ON_ONE) {
+        if (attackMode == AttackModes.ONE_ON_ONE) {
             distance = battleFieldSizeAverage * 0.6;
         } else if (directionToRun == Direction.BACK) {
             distance = DISTANCE_TO_RUN_BACK;
@@ -293,22 +311,9 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onHitWall(HitWallEvent event) {
-        final double degreesToGoOut = 90;
+        rotateToHorizontallyAgainst(event.getBearing());
 
-        boolean turnRight = changeDirection(event.getBearing(), degreesToGoOut);
-
-        if (battleMode == BattleMode.ONE_ON_ONE) {
-            isScanningEnemy = true;
-            battleVsOneOpponent();
-        } else {
-            ahead(ROBOT_SIZE);
-
-            if (turnRight) {
-                turnRight(degreesToGoOut);
-            } else {
-                turnLeft(degreesToGoOut);
-            }
-        }
+        //  TODO : Functionality : Search for enemies after hitting a wall!
     }
 
     @Override
@@ -387,7 +392,7 @@ public class TiroLioYCoshaGolda extends Robot {
      * <b>Important: </b>If we see a static enemy while we're escaping after receive a bullet from any other enemy, then we fire and continues
      * escaping.
      */
-    private void attackStaticEnemy() {
+    private void handleTargeting() {
         System.out.println("Attacking a static enemy.");
 
         handleFire(Rules.MAX_BULLET_POWER);
@@ -398,6 +403,7 @@ public class TiroLioYCoshaGolda extends Robot {
             System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
             resume();
         } else {
+            attackMode = previousAttackMode;
             scan();
         }
     }
@@ -441,10 +447,10 @@ public class TiroLioYCoshaGolda extends Robot {
         double distance = event.getDistance();
         double power = 1;
 
-        if (battleMode == BattleMode.ONE_ON_ONE) {
-//            if (distance <= battleFieldSizeAverage / 3) {
-//                power = 3;
-//            }
+        if (attackMode == AttackModes.ONE_ON_ONE) {
+            if (distance <= battleFieldSizeAverage / 3) {
+                power = 3;
+            }
         } else {
             if (distance <= battleFieldSizeAverage / 4) {
                 power = Rules.MAX_BULLET_POWER;
@@ -464,27 +470,6 @@ public class TiroLioYCoshaGolda extends Robot {
         }
 
         return power;
-    }
-
-    /**
-     * TODO : Javadoc for changeDirection
-     *
-     * @param bearing
-     * @param degrees
-     *
-     * @return
-     */
-    private boolean changeDirection(double bearing, double degrees) {
-        boolean changedRight = true;
-
-        if (bearing > 0) {
-            turnRight(bearing + degrees);
-        } else if (bearing != -180) {
-            turnLeft(bearing * -1 + degrees);
-            changedRight = false;
-        }
-
-        return changedRight;
     }
 
     /**
@@ -585,13 +570,14 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     /**
-     * TODO : Javadoc for BattleMode
+     * Represents the different kind of attacks that this robot support.
      * <p/>
      * Created on 8/14/13, at 15:36 PM.
      *
      * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
      */
-    public enum BattleMode {
+    public enum AttackModes {
+        TARGETING,
         ONE_ON_ONE,
         EVERYBODY_AGAINST_EVERYBODY
     }
