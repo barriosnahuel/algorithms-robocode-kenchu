@@ -17,6 +17,7 @@ package pnt;/*
  */
 
 
+import robocode.BulletHitEvent;
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
@@ -27,7 +28,9 @@ import robocode.ScannedRobotEvent;
 import java.awt.*;
 
 /**
- * Main class for this robot. It has the logic needed to win lot of battles... xD
+ * Main class for this robot. It has the logic needed to win lot of battles...
+ *
+ * TIENE LO NUEVO DE PERSEGUIRTE SI ME TIRAS MAS DE UNA O DOS VECES.
  * <p/>
  * Created on 8/7/13, at 7:28 PM.
  *
@@ -39,178 +42,577 @@ public class TiroLioYCoshaGolda2 extends Robot {
 
     private static final double DISTANCE_TO_RUN = ROBOT_SIZE * 4;
 
-    private static final double DISTANCE_TO_RUN_BACK = DISTANCE_TO_RUN * 2;
 
-    private static final double WALL_PROXIMITY_CONSTANT = 0.2;
+    private static final double LIMIT_TO_CONSIDER_STATIC_TARGET = 1.5;
 
     private static final double DISTANCE_TO_GO_FOR_TARGET = ROBOT_SIZE * 4;
+
+    private static final double WALL_PROXIMITY_CONSTANT = 0.2;
 
     private double battleFieldSizeAverage;
 
     public double initialEnergy;
 
+
+    private double minimumEnergyToFireBigBullets;
+
+    private double minimumEnergyToFireSmallestBullets;
+
+    private double minimumEnergyToStayAlive;
+
+
+    private int notFiredBullets = 0;
+
+    private double distanceToMoveWhenOneOnOne;
+
+    //    ************************************  ENUMS
+    //    ***********
+    //    How to set the body respect another object: wall/enemy/bullet
+    private static final int BODY_HEADING = 1;
+
+    private static final int BODY_PERPENDICULAR = 2;
+
+    //    ***********
+    //    Attack modes
+    private static final int ATTACK_MODE_STAY_ALIVE = 0;
+
+    private static final int ATTACK_MODE_EVERYBODY_AGAINST_EVERYBODY = 1;
+
+    private static final int ATTACK_MODE_STATIC_TARGET = 2;
+
+    private static final int ATTACK_MODE_DYNAMIC_TARGET = 3;
+
+    private static final int ATTACK_MODE_ONE_ON_ONE = 4;
+
+    //    ************************************  ENUMS
+
+    private int attackMode = ATTACK_MODE_EVERYBODY_AGAINST_EVERYBODY;
+
+    private int previousAttackMode;
+
+    private boolean isAttackModeSet;
+
     private double minimumEnergyToRam;
+
+    private double minimumEnergyToContinueFiringWhenHittedByBullet;
+
+    private double minimumEnergyToChase;
+
+    private int firedBullets;
+
+    private double targetEnergy;
+
+    private int isTargetBulletCounter;
+
+    private static final int IS_TARGET_BULLET_COUNTER_LIMIT = 3;
+
+    private String isTargetEnemyName;
+
+    private double isTargetEnemyAbsoluteAngle;
+
+    private boolean isEscaping;
 
     @Override
     public void run() {
         initialEnergy = getEnergy();
         minimumEnergyToRam = initialEnergy / 2;
 
-        final int degreesToRotateGun = 90;
+        minimumEnergyToContinueFiringWhenHittedByBullet = initialEnergy * 0.35;
 
+//         PROPERTIES
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
-        final double distanceToGoAhead = battleFieldSizeAverage / 5;
-        final double distanceToGoBack = distanceToGoAhead / 2;
+        distanceToMoveWhenOneOnOne = battleFieldSizeAverage / 5;
+
+        minimumEnergyToFireBigBullets = initialEnergy * 0.3;
+        minimumEnergyToFireSmallestBullets = initialEnergy * 0.15;
+        minimumEnergyToStayAlive = initialEnergy * 0.08;
+        minimumEnergyToChase = initialEnergy * 0.45;
+//        /PROPERTIES
 
         setColors(Color.black, Color.black, Color.green);
+        setBulletColor(Color.cyan);
+        setScanColor(Color.green);
+
+        setAdjustGunForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
+        setAdjustRadarForRobotTurn(true);
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            ahead(distanceToGoAhead);
-            scanForEnemies(degreesToRotateGun, true);
-            back(distanceToGoBack);
-            scanForEnemies(degreesToRotateGun, true);
+            setAttackMode();
+
+            switch (attackMode) {
+                case ATTACK_MODE_STAY_ALIVE:
+                    moveForStayingAlive();
+                    break;
+                case ATTACK_MODE_STATIC_TARGET:
+                    moveForStaticTargetMode();
+                    break;
+                case ATTACK_MODE_DYNAMIC_TARGET:
+                    moveForDynamicTargetMode();
+                    break;
+                case ATTACK_MODE_ONE_ON_ONE:
+                    moveForOneOnOneMode();
+                    break;
+                default:
+                    moveForEverybodyAgainstEverybody();
+            }
+        }
+    }
+
+    private void moveForStayingAlive() {
+        //  TODO : Functionality : Go to any corner and stay there.
+        ahead(ROBOT_SIZE);
+        back(ROBOT_SIZE);
+    }
+
+    private void moveForStaticTargetMode() {
+        turnRadarRight(15);
+        turnRadarLeft(30);
+        turnRadarRight(15);
+        ahead(ROBOT_SIZE * 3);
+
+        turnRadarRight(15);
+        turnRadarLeft(30);
+        turnRadarRight(15);
+        ahead(ROBOT_SIZE * 3);
+
+        restoreAttackMode();
+    }
+
+    private void moveForDynamicTargetMode() {
+        turnRadarRight(45);
+        turnRadarLeft(90);
+        turnRadarRight(360);
+    }
+
+    private void moveForOneOnOneMode() {
+        turnRadarRight(360);
+        ahead(distanceToMoveWhenOneOnOne);
+        turnRadarRight(360);
+        back(distanceToMoveWhenOneOnOne);
+    }
+
+    private void moveForEverybodyAgainstEverybody() {
+        turnRadarRight(180);
+        turnRadarRight(180);
+        ahead(battleFieldSizeAverage / 6);
+        turnRadarRight(180);
+        turnRadarRight(180);
+        back(battleFieldSizeAverage / 8);
+    }
+
+    private void setAttackMode() {
+        if (getEnergy() <= minimumEnergyToStayAlive) {
+            attackMode = ATTACK_MODE_STAY_ALIVE;
+        } else {
+            if (getOthers() > 1) {
+                attackMode = ATTACK_MODE_EVERYBODY_AGAINST_EVERYBODY;
+            } else if (!isAttackModeSet) {
+                attackMode = ATTACK_MODE_ONE_ON_ONE;
+                isAttackModeSet = true;
+            }
+        }
+    }
+
+    private void setAttackMode(ScannedRobotEvent event) {
+        setAttackMode();
+
+        if (!isAttackModeSet && event.getVelocity() <= LIMIT_TO_CONSIDER_STATIC_TARGET) {
+            previousAttackMode = attackMode;
+            attackMode = ATTACK_MODE_STATIC_TARGET;
+            isAttackModeSet = true;
+        }
+
+        if (!isAttackModeSet && event.getEnergy() <= minimumEnergyToChase && getEnergy() >= event.getEnergy()) {
+            previousAttackMode = attackMode;
+            attackMode = ATTACK_MODE_DYNAMIC_TARGET;
+            isAttackModeSet = true;
         }
     }
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-        double power = calculateBestPowerForShoot(event);
+        setAttackMode(event);
 
-        if (power == 1 && getOthers() == 1) {
-            power = 2;
+        boolean attack = true;
+
+        if (isEscaping) {
+            //  TODO : Functionality : If I can kill enemy with just one or two bullets, then kill him.
+            if ((getEnergy() <= initialEnergy * 0.25 || event.getEnergy() > initialEnergy * 0.2) && attackMode != ATTACK_MODE_ONE_ON_ONE) {
+                System.out.println("I'm escaping from an enemy, then I won't stay quite to attack another one.");
+                attack = false;
+            }
         }
 
-        fire(power);
-    }
-
-    @Override
-    public void onHitByBullet(HitByBulletEvent event) {
-        turnLeft(90 - event.getBearing());
-        turnGunLeft(90 + event.getBearing());
-
-        double x = getX();
-        double y = getY();
-
-        if (isNearWall(x, y) && isHeadingWall(x, y)) {
-            back(DISTANCE_TO_RUN_BACK);
-        } else {
-            ahead(DISTANCE_TO_RUN);
+        if (attack) {
+            switch (attackMode) {
+                case ATTACK_MODE_STAY_ALIVE:
+                    onScannedRobotForStayingAlive(event);
+                    break;
+                case ATTACK_MODE_STATIC_TARGET:
+                    onScannedRobotForStaticTarget(event);
+                    break;
+                case ATTACK_MODE_DYNAMIC_TARGET:
+                    onScannedRobotForDynamicTarget(event);
+                    break;
+                case ATTACK_MODE_ONE_ON_ONE:
+                    onScannedRobotForOneOnOne(event);
+                    break;
+                default:
+                    onScannedRobotForEverybodyAgainstEverybody(event);
+            }
         }
     }
 
-    @Override
-    public void onHitWall(HitWallEvent event) {
-        final double degreesToGoOut = 90;
-
-        boolean turnRight = changeDirection(event.getBearing(), degreesToGoOut);
-
-        ahead(ROBOT_SIZE);
-
-        if (turnRight) {
-            turnRight(degreesToGoOut);
-        } else {
-            turnLeft(degreesToGoOut);
+    private void onScannedRobotForStayingAlive(ScannedRobotEvent event) {
+        if (event.getEnergy() < getEnergy()) {
+            handleFire(event);
         }
     }
 
     @Override
     public void onHitRobot(HitRobotEvent event) {
         double bearing = event.getBearing();
+        double angle = getHeading() + bearing;
 
         if (event.isMyFault() && getEnergy() > minimumEnergyToRam) {
             turnRight(bearing);
+            turnGun(angle);
+            handleFire();
+            turnRadar(angle);
 
-            findEnemy(bearing);
+            //  TODO : Functionality : Set attack mode "Ramming" to fire with 3 points of energy or something special.
 
             ahead(DISTANCE_TO_GO_FOR_TARGET);
         } else {
+            turnRadar(angle);
+
             if (bearing > -90 && bearing <= 90) {
                 //  I'm heading him but I can't ram him.
-                findEnemy(bearing);
                 back(ROBOT_SIZE * 2);
             } else {
                 //  It's not my fault and he's behind me.
-                turnGunRight(getHeading() - 180 - getGunHeading());
-                ahead(100);
+                ahead(ROBOT_SIZE * 4);
             }
         }
     }
 
-    /**
-     * TODO : Javadoc for scanForEnemies
-     *
-     * @param degreesToRotateGun
-     */
-    private void scanForEnemies(int degreesToRotateGun, boolean turnLeft) {
-        for (int degrees = 360; degrees != 0; degrees -= degreesToRotateGun) {
-            if (turnLeft) {
-                turnGunLeft(degreesToRotateGun);
-            } else {
-                turnGunRight(degreesToRotateGun);
-            }
-        }
-    }
+    @Override
+    public void onHitWall(HitWallEvent event) {
+        turnRadarRight(360);
 
-    /**
-     * TODO : Javadoc for findEnemy
-     *
-     * @param bearing
-     */
-    private void findEnemy(double bearing) {
-        //  TODO : Fix method findEnemy
-        double pos = getHeading() + bearing;
-        if (bearing > 0) {
-            //  It's on my right.
-            turnGunRight(360);
+        if (isHeadingWall(getX(), getY())) {
+            back(ROBOT_SIZE * 2);
         } else {
-            //  It's on my left.
-            turnGunLeft(360);
+            ahead(ROBOT_SIZE * 2);
         }
+
+        rotateBody(BODY_PERPENDICULAR, event.getBearing());
+    }
+
+    @Override
+    public void onBulletHit(BulletHitEvent event) {
+
+        switch (attackMode) {
+            case ATTACK_MODE_STAY_ALIVE:
+                setAttackMode();
+                break;
+            case ATTACK_MODE_STATIC_TARGET:
+                targetEnergy = event.getEnergy();
+                break;
+            default:
+        }
+    }
+
+    private void handleFire() {
+        if (fireBullet(Rules.MAX_BULLET_POWER) != null) {
+            firedBullets++;
+        } else {
+            System.out.println("Can't fire! (time n°: " + ++notFiredBullets + ")");
+        }
+    }
+
+    private void onScannedRobotForOneOnOne(ScannedRobotEvent event) {
+        if (getGunHeat() > 0) {
+            turnRadarLeft(15);
+            turnRadarRight(30);
+            turnRadarLeft(15);
+        }
+
+        double firstHeading = getHeading();
+        double bearing = event.getBearing();
+
+        if (Math.abs(bearing) != 90) {
+            rotateBody(BODY_PERPENDICULAR, bearing);
+        }
+
+        turnGun(firstHeading + bearing);
+        turnRadar(firstHeading + bearing);
+        handleFire(event);
+    }
+
+    private void onScannedRobotForDynamicTarget(ScannedRobotEvent event) {
+        double originalBearing = event.getBearing();
+        double firstHeading = getHeading();
+        turnGun(firstHeading + originalBearing);
+
+        boolean shoot = true;
+        boolean rotateBody = true;
+
+        if (getGunHeat() > 0) {
+            rotateBody(BODY_HEADING, originalBearing);
+            rotateBody = false;
+            shoot = false;
+        }
+
+        if (getGunHeat() > 0) {
+            turnRadar(firstHeading + originalBearing);
+        }
+
+        while (getGunHeat() > 0) {
+            ahead(event.getDistance() / 4);
+            shoot = false;
+        }
+
+        if (shoot) {
+            handleFire(event);
+        } else {
+            ahead(event.getDistance() / 4);
+        }
+
+        if (rotateBody) {
+            rotateBody(BODY_HEADING, originalBearing);
+            ahead(event.getDistance() / 4);
+        }
+
+        moveForDynamicTargetMode();
+    }
+
+    private void onScannedRobotForEverybodyAgainstEverybody(ScannedRobotEvent event) {
+        double firstHeading = getHeading();
+        turnGun(firstHeading + event.getBearing());
+        handleFire(event);
+    }
+
+
+    private void onScannedRobotForStaticTarget(ScannedRobotEvent event) {
+        targetEnergy = event.getEnergy();
+
+        double bearing = event.getBearing();
+
+        double firstHeading = getHeading();
+
+        turnRadar(firstHeading + bearing);
+        turnGun(firstHeading + bearing);
+
+        if (getGunHeat() > 0) {
+            rotateBody(BODY_HEADING, event.getBearing());
+        }
+
+        handleFire(event);
+    }
+
+    private void restoreAttackMode() {
+        attackMode = previousAttackMode;
+        previousAttackMode = -1;
     }
 
     /**
      * Calculates which is the best power for fire to an enemy based on the distance that the enemy is.
      *
      * @param event
-     *         The {@link ScannedRobotEvent}.
+     *         The {@link robocode.ScannedRobotEvent}.
      *
      * @return 1, 2 or 3 depending on how close we are to the enemy.
      */
-    private double calculateBestPowerForShoot(ScannedRobotEvent event) {
+    private double calculateBestPowerForShooting(ScannedRobotEvent event) {
         double distance = event.getDistance();
         double power = 1;
 
-        if (event.getVelocity() == 0 || distance <= battleFieldSizeAverage / 4) {
-            power = Rules.MAX_BULLET_POWER;
-        } else if (distance <= battleFieldSizeAverage / 3) {
-            power = 2.5;
-        } else if (distance <= battleFieldSizeAverage / 2) {
-            power = 2;
+        switch (attackMode) {
+            case ATTACK_MODE_STAY_ALIVE:
+                power = Rules.MIN_BULLET_POWER;
+                break;
+            case ATTACK_MODE_STATIC_TARGET:
+                if (distance <= battleFieldSizeAverage / 5) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2.5;
+                } else {
+                    power = 2;
+                }
+                break;
+            case ATTACK_MODE_ONE_ON_ONE:
+                if (distance <= battleFieldSizeAverage / 5) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2.5;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2;
+                } else if (distance <= battleFieldSizeAverage / 3) {
+                    power = 1;
+                } else {
+                    power = 0.5;
+                }
+                break;
+            default:
+                if (distance <= battleFieldSizeAverage / 6) {
+                    power = Rules.MAX_BULLET_POWER;
+                } else if (getEnergy() < minimumEnergyToStayAlive) {
+                    power = Rules.MIN_BULLET_POWER;
+                } else if (getEnergy() < minimumEnergyToFireSmallestBullets) {
+                    power = 0.5;
+                } else if (getEnergy() < minimumEnergyToFireBigBullets) {
+                    power = 1;
+                } else if (distance <= battleFieldSizeAverage / 5) {
+                    power = 2.5;
+                } else if (distance <= battleFieldSizeAverage / 4) {
+                    power = 2;
+                }
+
+                if (power == 1 && getOthers() == 1) {
+                    power = 2;
+                }
         }
 
         return power;
     }
 
     /**
-     * TODO : Javadoc for changeDirection
+     * Handles the fire action to get statistics about fired bullets.
      *
-     * @param bearing
-     * @param degrees
-     *
-     * @return
+     * @param power
+     *         The power with which to shoot
      */
-    private boolean changeDirection(double bearing, double degrees) {
-        boolean changedRight = true;
+    private void handleFire(ScannedRobotEvent event) {
+        if (fireBullet(calculateBestPowerForShooting(event)) != null) {
+            firedBullets++;
+        } else {
+            System.out.println("Can't fire! (time n°: " + ++notFiredBullets + ")");
+        }
+    }
 
-        if (bearing > 0) {
-            turnRight(bearing + degrees);
-        } else if (bearing != -180) {
-            turnLeft(bearing * -1 + degrees);
-            changedRight = false;
+    @Override
+    public void onHitByBullet(HitByBulletEvent event) {
+        setAttackMode();
+
+        //  TODO : Refactor :  Creo que esto iría en el setAttackMode, o al menos una parte.
+        if (!event.getName().equals(isTargetEnemyName)) {
+            isTargetEnemyName = event.getName();
+            isTargetEnemyAbsoluteAngle = getHeading() + event.getBearing();
+            isTargetBulletCounter = 0;
         }
 
-        return changedRight;
+        if (++isTargetBulletCounter >= IS_TARGET_BULLET_COUNTER_LIMIT && getEnergy() > minimumEnergyToChase) {
+            double firstHeading = getHeading();
+
+            if (attackMode != ATTACK_MODE_DYNAMIC_TARGET) {
+                previousAttackMode = attackMode;
+                attackMode = ATTACK_MODE_DYNAMIC_TARGET;
+//                isTargetBulletCounter = 0;
+                isAttackModeSet = true;
+
+                rotateBody(BODY_HEADING, event.getBearing());
+                turnRadar(firstHeading + event.getBearing());
+            }
+            //  If I'm already chasing him, do nothing.
+        } else if (attackMode == ATTACK_MODE_STATIC_TARGET) {
+
+            double myEnergy = getEnergy();
+            if (myEnergy <= targetEnergy && myEnergy <= minimumEnergyToContinueFiringWhenHittedByBullet) {
+
+                attackMode = previousAttackMode;
+                escape(event);
+            }
+        } else if (attackMode != ATTACK_MODE_DYNAMIC_TARGET) {
+            escape(event);
+        }
+    }
+
+    /**
+     * Escape from a {@link HitByBulletEvent}.
+     *
+     * @param event
+     *         The {@link HitByBulletEvent}.
+     */
+    private void escape(HitByBulletEvent event) {
+        isEscaping = true;
+
+        turnLeft(90 - event.getBearing());
+
+        double x = getX();
+        double y = getY();
+
+        if (isNearWall(x, y) && isHeadingWall(x, y)) {
+            back(ROBOT_SIZE * 8);
+        } else {
+            ahead(ROBOT_SIZE * 6);
+        }
+
+        isEscaping = false;
+
+        //  TODO : Fix this..
+        turnGunLeft(90 + event.getBearing());
+    }
+
+    /**
+     * Rotates the body of the robot to stay horizontally to the specified robot/wall/bullet origin.
+     *
+     * @param mode
+     *         The final desired state of the body against the robot/wall/bullet: BODY_HEADING or BODY_PERPENDICULAR.
+     * @param bearing
+     *         The bearing to the robot/wall/bullet origin, in degrees.
+     */
+    private void rotateBody(int mode, double bearing) {
+        if (mode == BODY_PERPENDICULAR) {
+            if (bearing > 0) {
+                turnLeft(90 - bearing);
+            } else {
+                turnRight(90 - Math.abs(bearing));
+            }
+        } else {
+            turnRight(bearing);
+        }
+    }
+
+    private void turnRadar(double absolute) {
+        double angle = absolute - getRadarHeading();
+
+        if (absolute > 0) {
+            if (angle > 180) {
+                turnRadarLeft(360 - absolute + getRadarHeading());
+            } else if (angle > 0) {
+                //  y menor a 180, por la condicion anterior
+                turnRadarRight(angle);
+            } else if (angle < 0 && angle > -180) {
+                turnRadarRight(angle);//  da negativo y va para la izquierda
+            } else if (angle < -180) {
+                turnRadarLeft(360 - getRadarHeading() + absolute);
+            }
+        } else {
+            turnRadarRight(absolute);
+        }
+    }
+
+    private void turnGun(double absolute) {
+        double gunHeading = getGunHeading();
+        double angle = absolute - gunHeading;
+
+        if (absolute > 0) {
+            if (angle > 180) {
+                turnGunLeft(360 - absolute + gunHeading);
+            } else if (angle > 0) {
+                //  y menor a 180, por la condicion anterior
+                turnGunRight(angle);
+            } else if (angle < 0 && angle > -180) {
+                turnGunRight(angle);//  da negativo y va para la izquierda
+            } else if (angle < -180) {
+                turnGunLeft(360 - gunHeading + absolute);
+            }
+        } else {
+            turnGunRight(absolute);
+        }
     }
 
     /**
