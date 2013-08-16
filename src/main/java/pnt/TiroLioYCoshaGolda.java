@@ -54,6 +54,8 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private double minimumEnergyToStayAlive;
 
+    private double minimumEnergyToContinueFiringWhenHittedByBullet;
+
     private boolean isEscaping;
 
     private int firedBullets = 0;
@@ -88,6 +90,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
     private static final int DIRECTION_BACK = 2;
 
+    private double targetEnergy;
 
     @Override
     public void run() {
@@ -96,6 +99,7 @@ public class TiroLioYCoshaGolda extends Robot {
         minimumEnergyToFireBigBullets = initialEnergy * 0.3;
         minimumEnergyToFireSmallestBullets = initialEnergy * 0.15;
         minimumEnergyToStayAlive = initialEnergy * 0.08;
+        minimumEnergyToContinueFiringWhenHittedByBullet = initialEnergy * 0.35;
 
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
         final double distanceToGoAhead = battleFieldSizeAverage / 5;
@@ -107,7 +111,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
         //noinspection InfiniteLoopStatement
         while (true) {
-            updateAttackModeWhenCorresponding();
+            setAttackModeOneOnOneWhenCorresponding();
 
             if (attackMode == ATTACK_MODE_ONE_ON_ONE) {
                 battleOneOnOne();
@@ -147,13 +151,16 @@ public class TiroLioYCoshaGolda extends Robot {
         System.out.println("Scanned robot: " + event.getName() + " (" + event.getEnergy() + ")");
 
         //  This is in case there are 2 enemies left and one kills the other. Then I see the 1 left but not from the main loop, so...
-        updateAttackModeWhenCorresponding();
+        setAttackModeOneOnOneWhenCorresponding();
 
-        boolean enemyIsNotMoving = event.getVelocity() < 2;
+        boolean enemyIsNotMoving = event.getVelocity() < 1.5;
 
         if (enemyIsNotMoving) {
             previousAttackMode = attackMode;
             attackMode = ATTACK_MODE_TARGETING;
+            targetEnergy = event.getEnergy();
+        } else {
+            targetEnergy = -1;
         }
 
         if (attackMode == ATTACK_MODE_ONE_ON_ONE) {
@@ -188,7 +195,7 @@ public class TiroLioYCoshaGolda extends Robot {
     /**
      * Sets the {@link #attackMode} to ONE_ON_ONE if there is only one enemy left and the {@link #isAttackModeSet} field is not set yet.
      */
-    private void updateAttackModeWhenCorresponding() {
+    private void setAttackModeOneOnOneWhenCorresponding() {
         if (!isAttackModeSet && getOthers() == 1) {
             attackMode = ATTACK_MODE_ONE_ON_ONE;
             isAttackModeSet = true;
@@ -317,12 +324,30 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
-        isEscaping = true;
-        if (attackMode == ATTACK_MODE_TARGETING) {
-            attackMode = previousAttackMode;
-        }
+        System.out.println("Hitted by " + event.getName());
 
-        //  TODO : Functionality : If bullet is from the one that is my target, then evaluate continue shooting.
+        if (attackMode == ATTACK_MODE_TARGETING) {
+
+            double myEnergy = getEnergy();
+            if (myEnergy <= targetEnergy && myEnergy <= minimumEnergyToContinueFiringWhenHittedByBullet) {
+
+                attackMode = previousAttackMode;
+                escape(event);
+            }
+        } else {
+            escape(event);
+        }
+    }
+
+    /**
+     * Escape from a {@link HitByBulletEvent}.
+     *
+     * @param event
+     *         The {@link HitByBulletEvent}.
+     */
+    private void escape(HitByBulletEvent event) {
+        isEscaping = true;
+
         turnLeft(90 - event.getBearing());
 
         double x = getX();
@@ -378,6 +403,7 @@ public class TiroLioYCoshaGolda extends Robot {
 
 //            Call with 0 because I've already moved the gun when turning right the entire robot.
             //  TODO : Refactor :  This call with 0 is horrible because I know the implementation of findEnemy(x)
+            //  TODO : Functionality : Set attack mode "Ramming" to fire with 3 points of energy or something special.
             findEnemy(0);
 
             ahead(DISTANCE_TO_GO_FOR_TARGET);
@@ -396,6 +422,13 @@ public class TiroLioYCoshaGolda extends Robot {
 
     @Override
     public void onBulletHit(BulletHitEvent event) {
+        double enemyEnergy = event.getEnergy();
+        System.out.println("A bullet hit " + event.getName() + " and now has: " + enemyEnergy);
+
+        if (attackMode == ATTACK_MODE_TARGETING) {
+            targetEnergy = enemyEnergy;
+        }
+
         System.out.println("Bullet hitted " + event.getName() + "! (time n°: " + ++hittedBullets + ")");
     }
 
