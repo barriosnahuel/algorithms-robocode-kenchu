@@ -13,6 +13,9 @@ import robocode.ScannedRobotEvent;
  */
 public abstract class BaseRobot extends Robot {
 
+    //  ************************************ Constants
+    protected double ROBOT_SIZE = 36;
+
     //  ************************************ Properties
     protected double battleFieldSizeAverage;
 

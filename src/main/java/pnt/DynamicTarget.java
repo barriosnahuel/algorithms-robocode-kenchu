@@ -1,13 +1,14 @@
 package pnt;
 
 import robocode.BulletHitEvent;
+import robocode.HitRobotEvent;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
 
 import java.awt.*;
 
 /**
- * TODO : Javadoc for
+ * TODO : Javadoc for DynamicTarget
  * <p/>
  * Created on 16/08/13, at 12:39.
  *
@@ -16,6 +17,8 @@ import java.awt.*;
 public class DynamicTarget extends BaseRobot {
 
     private String targetName;
+
+    private double targetEnergy;
 
     @Override
     public void run() {
@@ -37,8 +40,10 @@ public class DynamicTarget extends BaseRobot {
     public void onScannedRobot(ScannedRobotEvent event) {
 
         String enemyName = event.getName();
-        if (targetName == null || targetName.equals(enemyName)) {
+        double enemyEnergy = event.getEnergy();
+        if (targetName == null || targetName.equals(enemyName) || enemyEnergy < targetEnergy) {
             targetName = enemyName;
+            targetEnergy = enemyEnergy;
 
             double heading = getHeading();
             double bearing = event.getBearing();
@@ -53,7 +58,14 @@ public class DynamicTarget extends BaseRobot {
 
             while (getGunHeat() > 0) {
                 rescan = true;
-                ahead(event.getDistance() / 2);
+
+                double distance = event.getDistance();
+                if (distance < ROBOT_SIZE) {
+                    distance = ROBOT_SIZE;
+                } else {
+                    distance = distance / 2;
+                }
+                ahead(distance);
             }
 
             turnGun(absolute, getGunHeading());
@@ -68,8 +80,20 @@ public class DynamicTarget extends BaseRobot {
 
     @Override
     public void onBulletHit(BulletHitEvent event) {
-        if (event.getName().equals(targetName)) {
-            if (event.getEnergy() == 0) {
+        checkForTargetAndCleanInformation(event.getName(), event.getEnergy());
+        //  TODO : Functionality : If is other enemy and it has less energy than target, change target!
+    }
+
+    @Override
+    public void onHitRobot(HitRobotEvent event) {
+        checkForTargetAndCleanInformation(event.getName(), event.getEnergy());
+        //  TODO : Functionality : If is other enemy and it has less energy than target, change target!
+    }
+
+    private void checkForTargetAndCleanInformation(String enemyName, double enemyEnergy) {
+        if (enemyName.equals(targetName)) {
+            targetEnergy = enemyEnergy;
+            if (targetEnergy == 0) {
                 cleanTargetInformation();
             }
         }
@@ -77,6 +101,7 @@ public class DynamicTarget extends BaseRobot {
 
     private void cleanTargetInformation() {
         targetName = null;
+        targetEnergy = -1;
     }
 
     @Override
