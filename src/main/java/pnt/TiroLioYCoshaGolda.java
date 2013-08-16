@@ -190,12 +190,10 @@ public class TiroLioYCoshaGolda extends Robot {
     }
 
     private void moveForEverybodyAgainstEverybody() {
-        turnRadarRight(180);
-        turnRadarRight(180);
-        ahead(battleFieldSizeAverage / 6);
-        turnRadarRight(180);
-        turnRadarRight(180);
-        back(battleFieldSizeAverage / 8);
+        scanForEnemies(4, false);
+        ahead(ROBOT_SIZE * 4);
+        scanForEnemies(4, false);
+        back(ROBOT_SIZE * 4);
     }
 
     private void setAttackMode() {
@@ -305,6 +303,12 @@ public class TiroLioYCoshaGolda extends Robot {
             case ATTACK_MODE_STATIC_TARGET:
                 targetEnergy = event.getEnergy();
                 break;
+            case ATTACK_MODE_DYNAMIC_TARGET:
+                targetEnergy = event.getEnergy();
+                if (event.getEnergy() == 0) {
+                    stop();
+                    restoreAttackMode();
+                }
             default:
         }
     }
@@ -377,12 +381,11 @@ public class TiroLioYCoshaGolda extends Robot {
         double firstHeading = getHeading();
         turnGun(firstHeading + event.getBearing());
         handleFire(event);
+        turnRadar(firstHeading + event.getBearing());
     }
 
 
     private void onScannedRobotForStaticTarget(ScannedRobotEvent event) {
-        targetEnergy = event.getEnergy();
-
         double bearing = event.getBearing();
 
         double firstHeading = getHeading();
@@ -394,12 +397,25 @@ public class TiroLioYCoshaGolda extends Robot {
             rotateBody(BODY_HEADING, event.getBearing());
         }
 
+        scanForEnemiesAfterWaitingForGunHeat();
+
         handleFire(event);
+    }
+
+    private void scanForEnemiesAfterWaitingForGunHeat() {
+        setAdjustRadarForGunTurn(false);
+        turnGunRight(10);
+        turnGunLeft(20);
+        turnGunRight(10);
+        setAdjustRadarForGunTurn(true);
     }
 
     private void restoreAttackMode() {
         attackMode = previousAttackMode;
         previousAttackMode = -1;
+        if (attackMode != ATTACK_MODE_ONE_ON_ONE) {
+            isAttackModeSet = false;
+        }
     }
 
     /**
@@ -466,8 +482,7 @@ public class TiroLioYCoshaGolda extends Robot {
     /**
      * Handles the fire action to get statistics about fired bullets.
      *
-     * @param power
-     *         The power with which to shoot
+     * @param event
      */
     private void handleFire(ScannedRobotEvent event) {
         if (fireBullet(calculateBestPowerForShooting(event)) != null) {
@@ -597,5 +612,16 @@ public class TiroLioYCoshaGolda extends Robot {
         }
 
         return isHeadingWall;
+    }
+
+    private void scanForEnemies(int steps, boolean turnLeft) {
+        double degrees = 360 / steps;
+        for (double left = 360; left > 0; left -= degrees) {
+            if (turnLeft) {
+                turnRadarLeft(degrees);
+            } else {
+                turnRadarLeft(degrees);
+            }
+        }
     }
 }
