@@ -110,7 +110,9 @@ public class DynamicTarget extends BaseRobot {
         double myEnergy = getEnergy();
         double power = 1;
 
-        if (myEnergy < minimumEnergyToStayAlive) {
+        if (myEnergy < minimumEnergyToStayAlive && distance < ROBOT_SIZE) {
+            power = Rules.MAX_BULLET_POWER;
+        } else if (myEnergy < minimumEnergyToStayAlive) {
             power = Rules.MIN_BULLET_POWER;
         } else if (distance <= battleFieldSizeAverage / 6) {
             power = Rules.MAX_BULLET_POWER;

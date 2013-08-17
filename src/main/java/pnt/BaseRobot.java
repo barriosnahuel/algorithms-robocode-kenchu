@@ -23,8 +23,6 @@ public abstract class BaseRobot extends Robot {
 
     protected double minimumEnergyToFireBigBullets;
 
-//    protected boolean isAttacking;
-
     //  ************************************ Statistics
     private int firedBullets;
 
@@ -32,6 +30,8 @@ public abstract class BaseRobot extends Robot {
 
     @Override
     public void run() {
+        double initialEnergy = getEnergy();
+        minimumEnergyToStayAlive = initialEnergy * 0.15;
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
 
         setAdjustRadarForGunTurn(true);
