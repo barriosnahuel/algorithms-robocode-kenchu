@@ -2,7 +2,6 @@ package pnt;
 
 import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
-import robocode.Rules;
 import robocode.ScannedRobotEvent;
 
 import java.awt.*;
@@ -102,32 +101,5 @@ public class DynamicTarget extends BaseRobot {
     private void cleanTargetInformation() {
         targetName = null;
         targetEnergy = -1;
-    }
-
-    @Override
-    protected double calculateBestPowerForShooting(ScannedRobotEvent event) {
-        double distance = event.getDistance();
-        double myEnergy = getEnergy();
-        double power = 1;
-
-        if (myEnergy < minimumEnergyToStayAlive && distance < ROBOT_SIZE) {
-            power = Rules.MAX_BULLET_POWER;
-        } else if (myEnergy < minimumEnergyToStayAlive) {
-            power = Rules.MIN_BULLET_POWER;
-        } else if (distance <= battleFieldSizeAverage / 6) {
-            power = Rules.MAX_BULLET_POWER;
-        } else if (distance <= battleFieldSizeAverage / 5) {
-            power = 2.5;
-        } else if (distance <= battleFieldSizeAverage / 4) {
-            power = 2;
-        } else if (distance <= battleFieldSizeAverage / 3) {
-            power = 1.5;
-        }
-
-        if (myEnergy < minimumEnergyToFireBigBullets) {
-            power -= 0.5;
-        }
-
-        return power;
     }
 }
