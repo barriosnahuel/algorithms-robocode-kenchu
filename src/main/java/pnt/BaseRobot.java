@@ -68,7 +68,11 @@ public abstract class BaseRobot extends Robot {
                 turnGunLeft(360 - gunHeading + absolute);
             }
         } else {
-            turnGunRight(absolute);
+            if (angle > 0) {
+                turnGunRight(absolute);
+            } else {
+                turnGunRight(360 - Math.abs(angle));
+            }
         }
     }
 
@@ -87,7 +91,22 @@ public abstract class BaseRobot extends Robot {
                 turnRadarLeft(360 - radarHeading + absolute);
             }
         } else {
-            turnRadarRight(absolute);
+            if (angle > 0) {
+                turnGunRight(absolute);
+            } else {
+                turnGunRight(360 - Math.abs(angle));
+            }
+        }
+    }
+
+    protected void scanForEnemies(int steps, boolean turnLeft) {
+        double degrees = 360 / steps;
+        for (double left = 360; left > 0; left -= degrees) {
+            if (turnLeft) {
+                turnRadarLeft(degrees);
+            } else {
+                turnRadarLeft(degrees);
+            }
         }
     }
 }
