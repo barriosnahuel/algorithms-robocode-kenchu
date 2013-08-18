@@ -1,6 +1,7 @@
 package pnt;
 
 import robocode.Robot;
+import robocode.Rules;
 import robocode.ScannedRobotEvent;
 
 /**
@@ -23,6 +24,14 @@ public abstract class BaseRobot extends Robot {
 
     protected double minimumEnergyToFireBigBullets;
 
+    //    ********************************** Enums
+    //    ***********
+    //    How to set the body respect another object: wall/enemy/bullet
+    private static final int BODY_HEADING = 1;
+
+    protected static final int BODY_PERPENDICULAR = 2;
+
+
     //  ************************************ Statistics
     private int firedBullets;
 
@@ -38,7 +47,31 @@ public abstract class BaseRobot extends Robot {
         setAdjustGunForRobotTurn(true);
     }
 
-    protected abstract double calculateBestPowerForShooting(ScannedRobotEvent event);
+    protected double calculateBestPowerForShooting(ScannedRobotEvent event) {
+        double distance = event.getDistance();
+        double myEnergy = getEnergy();
+        double power = 1;
+
+        if (myEnergy < minimumEnergyToStayAlive && distance < ROBOT_SIZE) {
+            power = Rules.MAX_BULLET_POWER;
+        } else if (myEnergy < minimumEnergyToStayAlive) {
+            power = Rules.MIN_BULLET_POWER;
+        } else if (distance <= battleFieldSizeAverage / 6) {
+            power = Rules.MAX_BULLET_POWER;
+        } else if (distance <= battleFieldSizeAverage / 5) {
+            power = 2.5;
+        } else if (distance <= battleFieldSizeAverage / 4) {
+            power = 2;
+        } else if (distance <= battleFieldSizeAverage / 3) {
+            power = 1.5;
+        }
+
+        if (myEnergy < minimumEnergyToFireBigBullets) {
+            power -= 0.5;
+        }
+
+        return power;
+    }
 
     /**
      * Handles the fire action to get statistics about fired bullets.
@@ -96,6 +129,26 @@ public abstract class BaseRobot extends Robot {
             } else {
                 turnGunRight(360 - Math.abs(angle));
             }
+        }
+    }
+
+    /**
+     * Rotates the body of the robot to stay horizontally to the specified robot/wall/bullet origin.
+     *
+     * @param mode
+     *         The final desired state of the body against the robot/wall/bullet: BODY_HEADING or BODY_PERPENDICULAR.
+     * @param bearing
+     *         The bearing to the robot/wall/bullet origin, in degrees.
+     */
+    protected void turnBody(int mode, double bearing) {
+        if (mode == BODY_PERPENDICULAR) {
+            if (bearing > 0) {
+                turnLeft(90 - bearing);
+            } else {
+                turnRight(90 - Math.abs(bearing));
+            }
+        } else {
+            turnRight(bearing);
         }
     }
 
