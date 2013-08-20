@@ -23,4 +23,5 @@ robocode.battle.numRounds=10
 robocode.battle.gunCoolingRate=0.1
 robocode.battle.rules.inactivityTime=450
 robocode.battle.hideEnemyNames=true
-robocode.battle.selectedRobots=pnt.TiroLioYCoshaGolda*,pnt.Gundam00*,pnt.KimoBot*,pnt.Phanbot*,pnt.Robotech*,pnt.TomaPorCurioso*,com.pnt.Uva*
+robocode.battle.selectedRobots=pnt.TiroLioYCoshaGolda*,pnt.KimoBot*,pnt.Phanbot*,pnt.TomaPorCurioso*,com.pnt.Uva*
+#robocode.battle.selectedRobots=pnt.TiroLioYCoshaGolda*,pnt.Gundam00*,pnt.KimoBot*,pnt.Phanbot*,pnt.Robotech*,pnt.TomaPorCurioso*,com.pnt.Uva*
