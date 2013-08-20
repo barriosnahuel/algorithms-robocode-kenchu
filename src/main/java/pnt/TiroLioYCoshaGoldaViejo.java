@@ -35,7 +35,7 @@ import java.awt.*;
  *
  * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
  */
-public class TiroLioYCoshaGolda extends Robot {
+public class TiroLioYCoshaGoldaViejo extends Robot {
 
     public static final int ROBOT_SIZE = 36;
 
