@@ -79,12 +79,9 @@ public class DynamicTarget extends BaseRobot {
     @Override
     public void onRobotDeath(RobotDeathEvent event) {
         if (event.getName().equals(targetName)) {
-            cleanTargetInformation();
+            //  Clean target information.
+            targetName = null;
+            targetEnergy = -1;
         }
-    }
-
-    private void cleanTargetInformation() {
-        targetName = null;
-        targetEnergy = -1;
     }
 }
