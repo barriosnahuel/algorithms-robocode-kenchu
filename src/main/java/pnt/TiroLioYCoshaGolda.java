@@ -59,15 +59,19 @@ public class TiroLioYCoshaGolda extends BaseRobot {
 
     //  **********************************************************************
     //  Dynamic target fields
-    private static final int RECEIVED_BULLETS_LIMIT = 1;
+    private static final int RECEIVED_BULLETS_LIMIT = 2;
 
     private int receivedBullets;
+
+    private String lastBulletOwner;
 
     private String targetName;
 
     private double targetEnergy;
 
     private boolean hasTarget;
+
+    private boolean isDynamicModeStarted;
 
     @Override
     public void run() {
@@ -86,9 +90,11 @@ public class TiroLioYCoshaGolda extends BaseRobot {
         switch (attackMode) {
             case ATTACK_MODE_SURVIVE:
                 System.out.println("onScannedRobot for SURVIVE");
+                //  TODO : Functionality : onScannedRobotForSurvive
                 break;
             case ATTACK_MODE_STAY_ALIVE:
                 System.out.println("onScannedRobot for STAY ALIVE");
+                //  TODO : Functionality : onScannedRobotForStayAlive
                 break;
             case ATTACK_MODE_DYNAMIC_TARGET:
                 System.out.println("onScannedRobot for DYNAMIC TARGET");
@@ -117,16 +123,21 @@ public class TiroLioYCoshaGolda extends BaseRobot {
 
     @Override
     public void onHitByBullet(HitByBulletEvent event) {
-        receivedBullets++;
-        setAttackMode();
+        String enemyName = event.getName();
+        if (lastBulletOwner == null || enemyName.equals(lastBulletOwner)) {
+            lastBulletOwner = enemyName;
 
-        if (!hasTarget) {
-            switch (attackMode) {
-                case ATTACK_MODE_DYNAMIC_TARGET:
+            if (++receivedBullets >= RECEIVED_BULLETS_LIMIT) {
+                setAttackMode();
+                if (!isDynamicModeStarted && hasTarget && attackMode == ATTACK_MODE_DYNAMIC_TARGET) {
                     System.out.println("onHitByBullet for DYNAMIC TARGET");
-//                    startDynamicTargetMode(event);
-                    break;
+                    startDynamicTargetMode(event.getBearing());
+                    isDynamicModeStarted = true;
+                }
             }
+        } else {
+            lastBulletOwner = enemyName;
+            receivedBullets = 1;
         }
     }
 
@@ -217,7 +228,6 @@ public class TiroLioYCoshaGolda extends BaseRobot {
             attackMode = ATTACK_MODE_STAY_ALIVE;
             System.out.println("Attack mode set to: STAY ALIVE");
         } else if (receivedBullets >= RECEIVED_BULLETS_LIMIT) {
-            hasTarget = true;
             attackMode = ATTACK_MODE_DYNAMIC_TARGET;
             System.out.println("Attack mode set to: DYNAMIC TARGET");
         } else if (getOthers() > 1 && !hasTarget) {
@@ -227,6 +237,8 @@ public class TiroLioYCoshaGolda extends BaseRobot {
             attackMode = ATTACK_MODE_ONE_ON_ONE;
             System.out.println("Attack mode set to: ONE ON ONE");
         }
+
+        hasTarget = attackMode == ATTACK_MODE_DYNAMIC_TARGET;
     }
 
     private void move() {
@@ -261,7 +273,7 @@ public class TiroLioYCoshaGolda extends BaseRobot {
     }
 
     private void moveForOneOnOne() {
-        setColors(Color.black, Color.black, Color.green);
+        setColors(Color.green, Color.black, Color.green);
 
         turnRadarRight(360);
         ahead(DISTANCE_TO_MOVE_ONE_ON_ONE);
@@ -274,6 +286,12 @@ public class TiroLioYCoshaGolda extends BaseRobot {
 
         turnRadarRight(360);
         turnRadarLeft(90);
+    }
+
+    private void startDynamicTargetMode(double bearing) {
+        setColors(Color.black, Color.black, Color.white);
+
+        turnRadar(getHeading() + bearing, getRadarHeading());
     }
 
     private void moveForMelee() {

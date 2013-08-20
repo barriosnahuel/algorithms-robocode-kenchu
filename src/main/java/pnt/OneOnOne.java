@@ -36,7 +36,7 @@ public class OneOnOne extends BaseRobot {
     public void run() {
         super.run();
 
-        setColors(Color.black, Color.black, Color.green);
+        setColors(Color.green, Color.black, Color.green);
 
         double distanceToMove = ROBOT_SIZE * 4;
 
