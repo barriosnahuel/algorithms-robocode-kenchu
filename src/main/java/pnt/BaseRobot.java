@@ -17,8 +17,12 @@ public abstract class BaseRobot extends Robot {
     //  ************************************ Constants
     protected double ROBOT_SIZE = 36;
 
+    protected static final double WALL_PROXIMITY_CONSTANT = 0.2;
+
     //  ************************************ Properties
     protected double battleFieldSizeAverage;
+
+    protected double minimumEnergyToSurvive;
 
     protected double minimumEnergyToStayAlive;
 
@@ -27,7 +31,7 @@ public abstract class BaseRobot extends Robot {
     //    ********************************** Enums
     //    ***********
     //    How to set the body respect another object: wall/enemy/bullet
-    private static final int BODY_HEADING = 1;
+    protected static final int BODY_HEADING = 1;
 
     protected static final int BODY_PERPENDICULAR = 2;
 
@@ -40,7 +44,9 @@ public abstract class BaseRobot extends Robot {
     @Override
     public void run() {
         double initialEnergy = getEnergy();
-        minimumEnergyToStayAlive = initialEnergy * 0.15;
+
+        minimumEnergyToSurvive = initialEnergy * 0.1;
+        minimumEnergyToStayAlive = initialEnergy * 0.2;
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
 
         setAdjustRadarForGunTurn(true);
@@ -98,11 +104,13 @@ public abstract class BaseRobot extends Robot {
             } else if (angle < 0 && angle > -180) {
                 turnGunRight(angle);//  da negativo y va para la izquierda
             } else if (angle < -180) {
-                turnGunLeft(360 - gunHeading + absolute);
+                turnGunRight(360 - gunHeading + absolute);
             }
         } else {
             if (angle > 0) {
                 turnGunRight(absolute);
+            } else if (angle > -180) {
+                turnGunRight(Math.abs(angle));//  da negativo y va para la izquierda
             } else {
                 turnGunRight(360 - Math.abs(angle));
             }
@@ -121,13 +129,16 @@ public abstract class BaseRobot extends Robot {
             } else if (angle < 0 && angle > -180) {
                 turnRadarRight(angle);//  da negativo y va para la izquierda
             } else if (angle < -180) {
-                turnRadarLeft(360 - radarHeading + absolute);
+                turnRadarRight(360 - radarHeading + absolute);
             }
         } else {
             if (angle > 0) {
-                turnGunRight(absolute);
+                turnRadarRight(absolute);
+            } else if (angle > -180) {
+                turnRadarRight(Math.abs(angle));//  da nega
+                // tivo y va para la izquierda
             } else {
-                turnGunRight(360 - Math.abs(angle));
+                turnRadarRight(360 - Math.abs(angle));
             }
         }
     }
@@ -161,5 +172,57 @@ public abstract class BaseRobot extends Robot {
                 turnRadarLeft(degrees);
             }
         }
+    }
+
+    /**
+     * Checks if we are heading a wall based on the position coordinates.
+     *
+     * @param x
+     *         The X coordinate.
+     * @param y
+     *         The Y coordinate.
+     *
+     * @return {@code true} if we are heading a wall or {@code false} when the wall is behind us.
+     */
+    protected boolean isHeadingWall(double x, double y) {
+        boolean isHeadingWall = false;
+        double heading = getHeading();
+
+        if (heading >= 0 && heading < 90) {
+            if (x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
+                isHeadingWall = true;
+            }
+        } else if (heading >= 90 && heading < 180) {
+            if (x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) || y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT) {
+                isHeadingWall = true;
+            }
+        } else if (heading >= 180 && heading < 270) {
+            if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT) {
+                isHeadingWall = true;
+            }
+        } else {
+            //  270-360
+            if (x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT || y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT)) {
+                isHeadingWall = true;
+            }
+        }
+
+        return isHeadingWall;
+    }
+
+    protected boolean isNearBottomLeftCorner(double x, double y) {
+        return x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT && y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT;
+    }
+
+    protected boolean isNearBottomRightCorner(double x, double y) {
+        return x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) && y < getBattleFieldHeight() * WALL_PROXIMITY_CONSTANT;
+    }
+
+    protected boolean isNearTopRightCorner(double x, double y) {
+        return x > getBattleFieldWidth() * (1 - WALL_PROXIMITY_CONSTANT) && y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT);
+    }
+
+    protected boolean isNearTopLeftCorner(double x, double y) {
+        return x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT && y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT);
     }
 }

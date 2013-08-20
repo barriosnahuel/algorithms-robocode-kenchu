@@ -18,6 +18,9 @@
 
 package pnt;
 
+import robocode.HitWallEvent;
+import robocode.ScannedRobotEvent;
+
 import java.awt.*;
 
 /**
@@ -35,13 +38,40 @@ public class OneOnOne extends BaseRobot {
 
         setColors(Color.black, Color.black, Color.green);
 
-        double distanceToMove = ROBOT_SIZE * 6;
+        double distanceToMove = ROBOT_SIZE * 4;
 
         while (true) {
             turnRadarRight(360);
             ahead(distanceToMove);
             turnRadarRight(360);
             back(distanceToMove);
+        }
+    }
+
+    @Override
+    public void onScannedRobot(ScannedRobotEvent event) {
+        double bearing = event.getBearing();
+
+        if (getEnergy() >= minimumEnergyToSurvive && getGunHeat() == 0) {
+            double heading = getHeading();
+            turnGun(heading + bearing, getGunHeading());
+            handleFire(event);
+            turnRadar(heading + bearing, getRadarHeading());
+            if (Math.abs(bearing) != 90) {
+                turnBody(BODY_PERPENDICULAR, bearing);
+            }
+        }
+
+        turnBody(BODY_PERPENDICULAR, bearing);
+    }
+
+    @Override
+    public void onHitWall(HitWallEvent event) {
+        turnBody(BODY_PERPENDICULAR, event.getBearing());
+        if (isHeadingWall(getX(), getY())) {
+            back(ROBOT_SIZE * 2);
+        } else {
+            ahead(ROBOT_SIZE * 2);
         }
     }
 }
