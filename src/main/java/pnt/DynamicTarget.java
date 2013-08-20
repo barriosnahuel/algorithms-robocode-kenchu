@@ -1,7 +1,6 @@
 package pnt;
 
-import robocode.BulletHitEvent;
-import robocode.HitRobotEvent;
+import robocode.RobotDeathEvent;
 import robocode.ScannedRobotEvent;
 
 import java.awt.*;
@@ -78,23 +77,9 @@ public class DynamicTarget extends BaseRobot {
     }
 
     @Override
-    public void onBulletHit(BulletHitEvent event) {
-        checkForTargetAndCleanInformation(event.getName(), event.getEnergy());
-        //  TODO : Functionality : If is other enemy and it has less energy than target, change target!
-    }
-
-    @Override
-    public void onHitRobot(HitRobotEvent event) {
-        checkForTargetAndCleanInformation(event.getName(), event.getEnergy());
-        //  TODO : Functionality : If is other enemy and it has less energy than target, change target!
-    }
-
-    private void checkForTargetAndCleanInformation(String enemyName, double enemyEnergy) {
-        if (enemyName.equals(targetName)) {
-            targetEnergy = enemyEnergy;
-            if (targetEnergy == 0) {
-                cleanTargetInformation();
-            }
+    public void onRobotDeath(RobotDeathEvent event) {
+        if (event.getName().equals(targetName)) {
+            cleanTargetInformation();
         }
     }
 
