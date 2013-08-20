@@ -36,7 +36,6 @@ public class DynamicTarget extends BaseRobot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent event) {
-
         String enemyName = event.getName();
         double enemyEnergy = event.getEnergy();
         if (targetName == null || targetName.equals(enemyName) || enemyEnergy < targetEnergy) {
@@ -60,8 +59,6 @@ public class DynamicTarget extends BaseRobot {
                 double distance = event.getDistance();
                 if (distance < ROBOT_SIZE) {
                     distance = ROBOT_SIZE;
-                } else {
-                    distance = distance / 2;
                 }
                 ahead(distance);
             }

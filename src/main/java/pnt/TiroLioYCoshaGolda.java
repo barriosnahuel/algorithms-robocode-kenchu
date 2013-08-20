@@ -177,8 +177,6 @@ public class TiroLioYCoshaGolda extends BaseRobot {
                 double distance = event.getDistance();
                 if (distance < ROBOT_SIZE) {
                     distance = ROBOT_SIZE;
-                } else {
-                    distance = distance / 2;
                 }
                 ahead(distance);
             }
