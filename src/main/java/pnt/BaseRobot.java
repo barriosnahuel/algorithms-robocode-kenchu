@@ -15,7 +15,7 @@ import robocode.ScannedRobotEvent;
 public abstract class BaseRobot extends Robot {
 
     //  ************************************ Constants
-    protected double ROBOT_SIZE = 36;
+    protected static double ROBOT_SIZE = 36;
 
     protected static final double WALL_PROXIMITY_CONSTANT = 0.2;
 
@@ -27,6 +27,8 @@ public abstract class BaseRobot extends Robot {
     protected double minimumEnergyToStayAlive;
 
     protected double minimumEnergyToFireBigBullets;
+
+    protected int attackMode;
 
     //    ********************************** Enums
     //    ***********
