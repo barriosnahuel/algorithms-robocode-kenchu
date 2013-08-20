@@ -1,5 +1,9 @@
 package pnt;
 
+import robocode.BulletHitBulletEvent;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.DeathEvent;
 import robocode.Robot;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
@@ -39,9 +43,13 @@ public abstract class BaseRobot extends Robot {
 
 
     //  ************************************ Statistics
-    private int firedBullets;
+    protected int firedBullets;
 
-    private int notFiredBullets;
+    protected int hitBullets;
+
+    protected int missedBullets;
+
+    protected int notFiredBullets;
 
     @Override
     public void run() {
@@ -226,5 +234,29 @@ public abstract class BaseRobot extends Robot {
 
     protected boolean isNearTopLeftCorner(double x, double y) {
         return x < getBattleFieldWidth() * WALL_PROXIMITY_CONSTANT && y > getBattleFieldHeight() * (1 - WALL_PROXIMITY_CONSTANT);
+    }
+
+    @Override
+    public void onDeath(DeathEvent event) {
+        System.out.println("---------------------");
+        System.out.println("Fired bullets: " + firedBullets);
+        System.out.println("Hit bullets: " + hitBullets);
+        System.out.println("Missed bullets: " + missedBullets);
+        System.out.println("Not fired bullets: " + notFiredBullets);
+    }
+
+    @Override
+    public void onBulletHit(BulletHitEvent event) {
+        hitBullets++;
+    }
+
+    @Override
+    public void onBulletMissed(BulletMissedEvent event) {
+        missedBullets++;
+    }
+
+    @Override
+    public void onBulletHitBullet(BulletHitBulletEvent event) {
+        missedBullets++;
     }
 }
