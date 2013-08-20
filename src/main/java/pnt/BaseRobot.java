@@ -4,6 +4,7 @@ import robocode.BulletHitBulletEvent;
 import robocode.BulletHitEvent;
 import robocode.BulletMissedEvent;
 import robocode.DeathEvent;
+import robocode.HitWallEvent;
 import robocode.Robot;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
@@ -23,6 +24,22 @@ public abstract class BaseRobot extends Robot {
 
     protected static final double WALL_PROXIMITY_CONSTANT = 0.2;
 
+    protected static final double LIMIT_TO_CONSIDER_STATIC_TARGET = 2;
+
+    //  ************************************ Attack modes
+
+    protected static final int ATTACK_MODE_SURVIVE = 0;
+
+    protected static final int ATTACK_MODE_STAY_ALIVE = 1;
+
+    protected static final int ATTACK_MODE_MELEE = 2;
+
+    protected static final int ATTACK_MODE_STATIC_TARGET = 3;
+
+    protected static final int ATTACK_MODE_DYNAMIC_TARGET = 4;
+
+    protected static final int ATTACK_MODE_ONE_ON_ONE = 5;
+
     //  ************************************ Properties
     protected double battleFieldSizeAverage;
 
@@ -31,6 +48,8 @@ public abstract class BaseRobot extends Robot {
     protected double minimumEnergyToStayAlive;
 
     protected double minimumEnergyToFireBigBullets;
+
+    protected double minimumEnergyToChase;
 
     protected int attackMode;
 
@@ -51,12 +70,18 @@ public abstract class BaseRobot extends Robot {
 
     protected int notFiredBullets;
 
+    private int hitWall;
+
     @Override
     public void run() {
+        super.run();
+
         double initialEnergy = getEnergy();
 
-        minimumEnergyToSurvive = initialEnergy * 0.1;
-        minimumEnergyToStayAlive = initialEnergy * 0.2;
+        minimumEnergyToSurvive = initialEnergy * 0.15;
+        minimumEnergyToStayAlive = initialEnergy * 0.25;
+        minimumEnergyToFireBigBullets = initialEnergy * 0.35;
+        minimumEnergyToChase = initialEnergy * 0.45;
         battleFieldSizeAverage = getBattleFieldWidth() + getBattleFieldHeight() / 2;
 
         setAdjustRadarForGunTurn(true);
@@ -66,9 +91,10 @@ public abstract class BaseRobot extends Robot {
     protected double calculateBestPowerForShooting(ScannedRobotEvent event) {
         double distance = event.getDistance();
         double myEnergy = getEnergy();
+
         double power = 1;
 
-        if (myEnergy < minimumEnergyToStayAlive && distance < ROBOT_SIZE) {
+        if ((myEnergy < minimumEnergyToStayAlive && distance < ROBOT_SIZE) || attackMode == ATTACK_MODE_STATIC_TARGET) {
             power = Rules.MAX_BULLET_POWER;
         } else if (myEnergy < minimumEnergyToStayAlive) {
             power = Rules.MIN_BULLET_POWER;
@@ -238,25 +264,37 @@ public abstract class BaseRobot extends Robot {
 
     @Override
     public void onDeath(DeathEvent event) {
+        super.onDeath(event);
+
         System.out.println("---------------------");
         System.out.println("Fired bullets: " + firedBullets);
         System.out.println("Hit bullets: " + hitBullets);
         System.out.println("Missed bullets: " + missedBullets);
         System.out.println("Not fired bullets: " + notFiredBullets);
+        System.out.println("Hit wall: " + hitWall);
     }
 
     @Override
     public void onBulletHit(BulletHitEvent event) {
+        super.onBulletHit(event);
         hitBullets++;
     }
 
     @Override
     public void onBulletMissed(BulletMissedEvent event) {
+        super.onBulletMissed(event);
         missedBullets++;
     }
 
     @Override
     public void onBulletHitBullet(BulletHitBulletEvent event) {
+        super.onBulletHitBullet(event);
         missedBullets++;
+    }
+
+    @Override
+    public void onHitWall(HitWallEvent event) {
+        super.onHitWall(event);
+        hitWall++;
     }
 }
