@@ -33,7 +33,7 @@ import java.awt.*;
  *
  * @author Nahuel Barrios <barrios.nahuel@gmail.com>.
  */
-public class TiroLioYCoshaGolda extends BaseRobot {
+public class TiroLioYCoshaGoldaMerge extends BaseRobot {
 
     //  **********************************************************************
     //  Melee fields
