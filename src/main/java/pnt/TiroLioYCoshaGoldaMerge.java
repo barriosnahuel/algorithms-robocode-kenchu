@@ -82,13 +82,11 @@ public class TiroLioYCoshaGoldaMerge extends BaseRobot {
         switch (attackMode) {
             case ATTACK_MODE_SURVIVE:
                 System.out.println("onScannedRobot for SURVIVE");
-                //  TODO : Functionality : onScannedRobotForSurvive: When enemies energies is too much more than mine, continue attacking because I wil die after all.
-                handleFire(event);
+                onScannedRobotForStayAliveAndSurvive(event);
                 break;
             case ATTACK_MODE_STAY_ALIVE:
                 System.out.println("onScannedRobot for STAY ALIVE");
-                //  TODO : Functionality : onScannedRobotForStayAlive: Fire only against enemies with less energy than me.
-                handleFire(event);
+                onScannedRobotForStayAliveAndSurvive(event);
                 break;
             case ATTACK_MODE_STATIC_TARGET:
                 System.out.println("onScannedRobot for STATIC TARGET");
@@ -105,6 +103,13 @@ public class TiroLioYCoshaGoldaMerge extends BaseRobot {
             default:
                 System.out.println("onScannedRobot for MELEE");
                 onScannedRobotForMelee(event);
+        }
+    }
+
+    private void onScannedRobotForStayAliveAndSurvive(ScannedRobotEvent event) {
+        if (event.getEnergy() <= getEnergy() && event.getDistance() < battleFieldSizeAverage / 3 && event.getVelocity() < 4) {
+            turnGun(getHeading() + event.getBearing(), getGunHeading());
+            handleFire(event);
         }
     }
 
@@ -318,6 +323,7 @@ public class TiroLioYCoshaGoldaMerge extends BaseRobot {
         }
 
         ahead(ROBOT_SIZE * 3);
+        turnRadarRight(360);
         turnRight(30);
     }
 
