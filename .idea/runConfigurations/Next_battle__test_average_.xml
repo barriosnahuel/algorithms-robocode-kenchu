@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="OneOnOne vs. MyFirstRobot" type="Application" factoryName="Application">
+  <configuration default="false" name="Next battle (test average)" type="Application" factoryName="Application">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
     <option name="MAIN_CLASS_NAME" value="robocode.Robocode" />
     <option name="VM_PARAMETERS" value="-Xmx512M -Dsun.io.useCanonCaches=false -Ddebug=true" />
-    <option name="PROGRAM_PARAMETERS" value="-battle $PROJECT_DIR$/src/test/resources/one-on-one-vs-my-first-robot.battle" />
-    <option name="WORKING_DIRECTORY" value="file://$USER_HOME$/robocode" />
+    <option name="PROGRAM_PARAMETERS" value="-nodisplay -battle $PROJECT_DIR$/src/test/resources/next-test-average.battle -results $PROJECT_DIR$/src/test/resources/results.txt" />
+    <option name="WORKING_DIRECTORY" value="file://C:/robocode" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" value="" />
     <option name="ENABLE_SWING_INSPECTOR" value="false" />
@@ -12,13 +12,7 @@
     <option name="PASS_PARENT_ENVS" value="true" />
     <module name="kenchu" />
     <envs />
-    <RunnerSettings RunnerId="Debug">
-      <option name="DEBUG_PORT" value="" />
-      <option name="TRANSPORT" value="0" />
-      <option name="LOCAL" value="true" />
-    </RunnerSettings>
     <RunnerSettings RunnerId="Run" />
-    <ConfigurationWrapper RunnerId="Debug" />
     <ConfigurationWrapper RunnerId="Run" />
     <method />
   </configuration>
