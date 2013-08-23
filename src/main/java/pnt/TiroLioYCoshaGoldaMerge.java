@@ -283,6 +283,10 @@ public class TiroLioYCoshaGoldaMerge extends BaseRobot {
             }
         }
 
+        if (attackMode == ATTACK_MODE_DYNAMIC_TARGET && event.getEnergy() > getEnergy() - 5) {
+            attackMode = previousAttackMode;
+        }
+
 //        if (event.getEnergy() <= minimumEnergyToChase && getEnergy() >= event.getEnergy()) {
 //            previousAttackMode = attackMode;
 //            attackMode = ATTACK_MODE_DYNAMIC_TARGET;
